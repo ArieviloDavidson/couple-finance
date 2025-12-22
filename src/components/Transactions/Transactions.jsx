@@ -1,0 +1,225 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  collection, 
+  query, 
+  orderBy, 
+  onSnapshot, 
+  doc, 
+  writeBatch, 
+  increment 
+} from 'firebase/firestore';
+import { db } from '../../firebase';
+import TransactionForm from '../TransactionForm/TransactionForm';
+import './Transactions.css';
+
+const Transactions = () => {
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Filtros
+  const [filterType, setFilterType] = useState('todos');
+  const [filterDate, setFilterDate] = useState(() => {
+    // Inicia com o mês atual (YYYY-MM)
+    const today = new Date();
+    return today.toISOString().slice(0, 7);
+  });
+
+  // 1. Busca Transações em Tempo Real
+  useEffect(() => {
+    const q = query(collection(db, 'transactions'), orderBy('date', 'desc'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => {
+        const docData = doc.data();
+        return {
+          id: doc.id,
+          ...docData,
+          // Converte Timestamp do Firestore para Date nativo do JS
+          dateObj: docData.date?.toDate ? docData.date.toDate() : new Date(docData.date)
+        };
+      });
+      setTransactions(data);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // 2. ADICIONAR: Cria a transação e Atualiza o Saldo da Carteira (Atômico)
+  const handleAddTransaction = async (newTrans) => {
+    try {
+      const batch = writeBatch(db); // Inicia o lote de gravação
+
+      // Passo A: Referência da nova transação
+      const newTransRef = doc(collection(db, "transactions"));
+      batch.set(newTransRef, newTrans);
+
+      // Passo B: Referência da carteira a ser atualizada
+      if (newTrans.walletId) {
+        const walletRef = doc(db, "wallets", newTrans.walletId);
+        
+        // Lógica: Entrada SOMA (+), Saída SUBTRAI (-)
+        const amountToAdjust = newTrans.type === 'entrada' ? newTrans.value : -newTrans.value;
+
+        batch.update(walletRef, {
+          currentBalance: increment(amountToAdjust)
+        });
+      }
+
+      // Passo C: Executa tudo de uma vez
+      await batch.commit();
+
+    } catch (error) {
+      console.error("Erro ao criar transação:", error);
+      alert("Erro ao salvar. O saldo não foi alterado.");
+    }
+  };
+
+  // 3. EXCLUIR: Apaga a transação e Estorna o valor para a Carteira
+  const handleDeleteTransaction = async (transaction) => {
+    const confirmDelete = window.confirm(
+      `Excluir "${transaction.description}"? O valor (R$ ${transaction.value}) será estornado para a carteira.`
+    );
+    
+    if (confirmDelete) {
+      try {
+        const batch = writeBatch(db);
+
+        // Passo A: Referência da transação para deletar
+        const transRef = doc(db, "transactions", transaction.id);
+        batch.delete(transRef);
+
+        // Passo B: Verifica se tem carteira vinculada para estornar
+        if (transaction.walletId) {
+          const walletRef = doc(db, "wallets", transaction.walletId);
+          
+          // Lógica INVERSA (Estorno):
+          // Se apaguei uma ENTRADA, tiro o dinheiro (-).
+          // Se apaguei uma SAÍDA, devolvo o dinheiro (+).
+          const amountToRevert = transaction.type === 'entrada' ? -transaction.value : transaction.value;
+
+          batch.update(walletRef, {
+            currentBalance: increment(amountToRevert)
+          });
+        }
+
+        await batch.commit();
+
+      } catch (error) {
+        console.error("Erro ao excluir:", error);
+        alert("Erro ao excluir. O saldo não foi estornado.");
+      }
+    }
+  };
+
+  // 4. Lógica de Filtragem no Front-end
+  const filteredTransactions = transactions.filter(item => {
+    // Filtro de Tipo
+    if (filterType !== 'todos' && item.type !== filterType) return false;
+
+    // Filtro de Data (Mês/Ano)
+    if (filterDate) {
+      const itemDate = item.dateObj.toISOString().slice(0, 7);
+      if (itemDate !== filterDate) return false;
+    }
+
+    return true;
+  });
+
+  // 5. Cálculo do Total da Visualização Atual
+  const totalBalance = filteredTransactions.reduce((acc, item) => {
+    return item.type === 'entrada' ? acc + Number(item.value) : acc - Number(item.value);
+  }, 0);
+
+  if (loading) return <div className="loading">Carregando movimentações...</div>;
+
+  return (
+    <div className="transactions-container">
+      <div className="transactions-header">
+        <h2>Movimentações</h2>
+        
+        <button className="btn-new-trans" onClick={() => setIsModalOpen(true)}>
+            + Nova Movimentação
+        </button>
+
+        <div className="filters">
+          <input 
+            type="month" 
+            value={filterDate} 
+            onChange={(e) => setFilterDate(e.target.value)}
+            className="filter-input"
+          />
+          
+          <select 
+            value={filterType} 
+            onChange={(e) => setFilterType(e.target.value)}
+            className="filter-select"
+          >
+            <option value="todos">Todos</option>
+            <option value="entrada">Entradas</option>
+            <option value="saida">Saídas</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="balance-summary">
+        <span>Total no período: </span>
+        <strong className={totalBalance >= 0 ? 'text-green' : 'text-red'}>
+          {totalBalance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+        </strong>
+      </div>
+
+      <div className="transactions-list">
+        {filteredTransactions.length === 0 ? (
+          <p className="no-data">Nenhuma transação neste período.</p>
+        ) : (
+          filteredTransactions.map(item => (
+            <div key={item.id} className="transaction-item">
+              
+              <button 
+                className="btn-delete-transaction" 
+                onClick={() => handleDeleteTransaction(item)}
+                title="Excluir e estornar saldo"
+              >
+                &times;
+              </button>
+
+              <div className={`indicator ${item.type}`}></div>
+
+              <div className="transaction-info">
+                <span className="transaction-desc">{item.description}</span>
+                <span className="transaction-category">{item.category}</span>
+                <div className="transaction-meta">
+                  <span className="transaction-date">
+                    {item.dateObj.toLocaleDateString('pt-BR')}
+                  </span>
+                  
+                  {/* Badge da Carteira */}
+                  {item.walletName && (
+                    <span className="transaction-wallet-badge">
+                        {item.walletName}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className={`transaction-value ${item.type}`}>
+                {item.type === 'saida' ? '- ' : '+ '}
+                {Number(item.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <TransactionForm 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSave={handleAddTransaction} 
+      />
+    </div>
+  );
+};
+
+export default Transactions;

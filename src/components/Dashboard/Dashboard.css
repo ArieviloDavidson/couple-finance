@@ -1,0 +1,61 @@
+.dashboard-container {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column; /* Garante que o grid ocupe o resto da altura */
+}
+
+/* Header Flex para alinhar Texto à Esquerda e Saldo à Direita */
+.dashboard-header {
+  margin-bottom: 30px;
+  display: flex;
+  justify-content: space-between; /* Separa os elementos nas pontas */
+  align-items: center; /* Centraliza verticalmente */
+  gap: 20px;
+}
+
+.header-text h1 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.header-text p {
+  color: #7f8c8d;
+  margin-top: 5px;
+  margin-bottom: 0;
+}
+
+/* Estilo do Card Verde (Copiado/Adaptado do Wallets) */
+.dashboard-balance-card {
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
+  color: white;
+  padding: 10px 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3);
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-balance-card span {
+  font-size: 0.85rem;
+  opacity: 0.9;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dashboard-balance-card strong {
+  font-size: 1.5rem;
+}
+
+/* Grid System para o Dashboard */
+.dashboard-grid {
+  display: flex;
+  flex-direction: row;
+  height: 80%;
+  width: 100%;
+  gap: 20px;
+  align-items: start;
+}

@@ -1,0 +1,64 @@
+/* src/components/Charts/ChartExpensesCategory.css */
+
+.chart-container {
+  background: white;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  height: 100%;
+  width: 100%;
+}
+
+/* Header para alinhar Título e Filtro */
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-shrink: 0; /* Garante que o header não encolha */
+}
+
+.chart-title {
+  color: #2c3e50;
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.chart-filter {
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  color: #555;
+  font-size: 0.85rem;
+  background-color: #f9f9f9;
+  cursor: pointer;
+}
+
+.chart-filter:focus {
+  outline: none;
+  border-color: #0088FE;
+}
+
+/* --- NOVAS CLASSES --- */
+
+/* Área flexível que ocupa todo o espaço abaixo do header */
+.chart-content {
+  flex: 1; 
+  width: 100%;
+  min-height: 0; /* Importante para o Recharts não estourar o container */
+  position: relative;
+}
+
+/* Estilo da mensagem de vazio */
+.chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  color: #aaa;
+  font-size: 0.9rem;
+}

@@ -1,0 +1,343 @@
+import React, { useState, useEffect } from 'react';
+import { collection, onSnapshot, addDoc, deleteDoc, doc, writeBatch, increment } from 'firebase/firestore';
+import { db } from '../../firebase';
+import './ListCards.css';
+import CardForm from '../CardForm/CardForm';
+import CardShoppingForm from '../CardShoppingForm/CardShoppingForm';
+import PayOffModal from '../PayOffModal/PayOffModal';
+
+const ListCards = () => {
+  const [cards, setCards] = useState([]);
+  const [shoppingList, setShoppingList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isShoppingModalOpen, setIsShoppingModalOpen] = useState(false);
+  const [payOffModalOpen, setPayOffModalOpen] = useState(false);
+  const [selectedPurchaseToPay, setSelectedPurchaseToPay] = useState(null);
+
+  // 1. Busca Cartões e Compras em paralelo (COM CORREÇÃO DE DATA)
+  useEffect(() => {
+    // Listener dos Cartões
+    const unsubscribeCards = onSnapshot(collection(db, 'cards'), (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+      setCards(data);
+    });
+
+    // Listener das Compras
+    const unsubscribeShopping = onSnapshot(collection(db, 'cardsShopping'), (snapshot) => {
+      const data = snapshot.docs.map(doc => {
+        const docData = doc.data();
+        
+        // --- CORREÇÃO DE DATA ---
+        // Se for Timestamp do Firestore, usa .toDate(). Se não, tenta converter string.
+        const dateObj = docData.date?.toDate 
+            ? docData.date.toDate() 
+            : (docData.date ? new Date(docData.date) : new Date());
+
+        return { 
+          ...docData, 
+          id: doc.id,
+          dateObj: dateObj
+        };
+      });
+
+      // Ordena por data (mais recente primeiro)
+      const sortedData = data.sort((a, b) => b.dateObj - a.dateObj);
+      setShoppingList(sortedData);
+      setLoading(false);
+    });
+
+    return () => {
+      unsubscribeCards();
+      unsubscribeShopping();
+    };
+  }, []);
+
+  // --- HELPER: Calcular Limite Disponível ---
+  const getCardMetrics = (cardId, limitTotal) => {
+    // Filtra compras deste cartão que NÃO estão pagas
+    const openPurchases = shoppingList.filter(item => 
+      item.cardId === cardId && item.status !== 'pago'
+    );
+
+    // Soma o total usado
+    const used = openPurchases.reduce((acc, item) => acc + Number(item.totalValue), 0);
+    
+    // Calcula disponível (não deixa ficar negativo visualmente)
+    const available = limitTotal - used;
+
+    return {
+      used,
+      available: available < 0 ? 0 : available,
+      percentageUsed: limitTotal > 0 ? (used / limitTotal) * 100 : 0
+    };
+  };
+
+  const handleAddCard = async (newCardData) => {
+    try {
+      await addDoc(collection(db, 'cards'), {
+        ...newCardData,
+        owner: 'Eu',
+        createdAt: new Date()
+      });
+    } catch (error) {
+      console.error("Erro ao salvar cartão:", error);
+    }
+  };
+
+  const handleDeleteCard = async (id) => {
+    if (window.confirm("Tem certeza que deseja excluir este cartão?")) {
+      try {
+        await deleteDoc(doc(db, "cards", id));
+      } catch (error) {
+        console.error("Erro ao excluir:", error);
+      }
+    }
+  };
+
+  // --- LÓGICA DE PARCELAMENTO AUTOMÁTICO (SPLIT) ---
+  const handleAddShopping = async (purchaseData) => {
+    try {
+      const batch = writeBatch(db); // Inicia o lote
+      const installments = Number(purchaseData.installments);
+      const installmentValue = Number(purchaseData.installmentValue);
+      
+      // Garante que é um objeto Date
+      const baseDate = new Date(purchaseData.date); 
+
+      // Loop para criar UMA entrada por parcela
+      for (let i = 1; i <= installments; i++) {
+        const newDocRef = doc(collection(db, "cardsShopping"));
+
+        // Calcula a data desta parcela (Incrementa os meses)
+        const parcelDate = new Date(baseDate);
+        parcelDate.setMonth(parcelDate.getMonth() + (i - 1));
+
+        // Define os dados desta parcela
+        batch.set(newDocRef, {
+          ...purchaseData,
+          description: installments > 1 ? `${purchaseData.description} (${i}/${installments})` : purchaseData.description,
+          totalValue: installmentValue, 
+          date: parcelDate, 
+          installmentIndex: i, 
+          originalTotal: purchaseData.totalValue,
+          status: 'aberto' // Garante status inicial
+        });
+      }
+
+      await batch.commit();
+      alert(`${installments} parcela(s) lançada(s) com sucesso!`);
+      
+    } catch (error) {
+      console.error("Erro ao lançar compra parcelada:", error);
+      alert("Erro ao salvar compras.");
+    }
+  };
+
+  const handleDeleteShopping = async (id, description) => {
+    if (window.confirm(`Excluir a compra "${description}"? Isso liberará o limite do cartão.`)) {
+      try {
+        await deleteDoc(doc(db, "cardsShopping", id));
+      } catch (error) {
+        console.error("Erro ao excluir compra:", error);
+      }
+    }
+  };
+
+  const getCardName = (cardId) => {
+    const card = cards.find(c => c.id === cardId);
+    return card ? card.name : 'Cartão Excluído';
+  };
+
+  const processPayment = async (purchase, walletId, walletName) => {
+    try {
+      const batch = writeBatch(db);
+
+      // 1. Atualiza o status da compra no Shopping para 'pago'
+      const purchaseRef = doc(db, "cardsShopping", purchase.id);
+      batch.update(purchaseRef, { status: 'pago' });
+
+      // 2. Desconta o valor da Wallet escolhida
+      const walletRef = doc(db, "wallets", walletId);
+      batch.update(walletRef, { currentBalance: increment(-purchase.totalValue) });
+
+      // 3. Cria o registro histórico na Transactions
+      const newTransactionRef = doc(collection(db, "transactions"));
+      batch.set(newTransactionRef, {
+        description: `Pagamento Cartão: ${purchase.description}`,
+        value: Number(purchase.totalValue),
+        type: 'saida',
+        category: 'Pagamento de Cartão', 
+        date: new Date(), 
+        walletId: walletId,
+        walletName: walletName,
+        paymentMethod: 'payment_bill'
+      });
+
+      await batch.commit();
+      alert("Pagamento registrado! Limite liberado e saldo descontado.");
+
+    } catch (error) {
+      console.error("Erro no pagamento:", error);
+      alert("Erro ao processar pagamento.");
+    }
+  };
+
+  const openPayModal = (item) => {
+    setSelectedPurchaseToPay(item);
+    setPayOffModalOpen(true);
+  };
+
+  if (loading) return <div className="loading">Carregando...</div>;
+
+  return (
+    <div className="cards-wrapper">
+      <div className="header-actions">
+        <h2>Meus Cartões</h2>
+        <div className="header-buttons">
+            <button className="btn-new-card" onClick={() => setIsModalOpen(true)}>
+            + Novo Cartão
+            </button>
+            <button className="btn-shopping" onClick={() => setIsShoppingModalOpen(true)}>
+            + Compra Crédito
+            </button>
+        </div>
+      </div>
+
+      {/* GRID DE CARTÕES */}
+      <div className="cards-grid">
+        {cards.map(card => {
+          // Calcula métricas individuais
+          const metrics = getCardMetrics(card.id, Number(card.limit));
+          
+          return (
+            <div key={card.id} className="card-item" style={{ borderTop: `4px solid ${card.color || '#ccc'}` }}>
+              <button className="btn-delete" onClick={() => handleDeleteCard(card.id)} title="Excluir cartão">&times;</button>
+
+              <div className="card-header">
+                <h3>{card.name}</h3>
+                <div className="card-tags">
+                  {card.flag && <span className="card-flag">{card.flag}</span>}
+                </div>
+              </div>
+              
+              {/* Informações de Limite Calculado */}
+              <div className="card-limit-info">
+                <div className="limit-row">
+                  <span className="limit-label">Disponível</span>
+                  <span className="limit-value available">
+                    {metrics.available.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </span>
+                </div>
+                
+                <div className="limit-progress-bar">
+                  <div 
+                    className="limit-progress-fill" 
+                    style={{ 
+                      width: `${Math.min(metrics.percentageUsed, 100)}%`,
+                      backgroundColor: metrics.percentageUsed > 90 ? '#e74c3c' : (card.color || '#2c3e50')
+                    }}
+                  ></div>
+                </div>
+
+                <div className="limit-row small">
+                  <span className="limit-label">Limite Total</span>
+                  <span className="limit-value">
+                    {Number(card.limit).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="card-body">
+                <div className="card-dates">
+                  <div className="date-group">
+                    <small>Fecha dia</small>
+                    <strong>{card.closingDay}</strong>
+                  </div>
+                  <div className="date-separator"></div>
+                  <div className="date-group">
+                    <small>Vence dia</small>
+                    <strong>{card.dueDay}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* LISTA DE COMPRAS */}
+      <div className="shopping-history-section">
+        <h3>Histórico de Compras (Crédito)</h3>
+        
+        {shoppingList.length === 0 ? (
+          <p className="no-data">Nenhuma compra registrada nos cartões.</p>
+        ) : (
+          <div className="shopping-list">
+            {shoppingList.map(item => {
+              const isPaid = item.status === 'pago';
+
+              return (
+                <div key={item.id} className={`shopping-item ${isPaid ? 'paid-item' : ''}`}>
+                  <div className="shopping-info">
+                    <span className="shopping-date">
+                      {item.dateObj.toLocaleDateString('pt-BR')}
+                    </span>
+                    <strong className="shopping-desc">{item.description}</strong>
+                    <span className="shopping-card-badge">{getCardName(item.cardId)}</span>
+                    
+                    {isPaid && <span className="status-badge-paid">PAGO</span>}
+                  </div>
+
+                  <div className="shopping-actions">
+                    <strong className="shopping-total">
+                      {Number(item.totalValue).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </strong>
+                    
+                    {!isPaid && (
+                      <button 
+                        className="btn-pay-shopping"
+                        onClick={() => openPayModal(item)}
+                        title="Baixar/Pagar Compra"
+                      >
+                        ✓
+                      </button>
+                    )}
+
+                    <button 
+                      className="btn-delete-shopping"
+                      onClick={() => handleDeleteShopping(item.id, item.description)}
+                    >
+                      &times;
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* MODALS */}
+      <CardForm 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSave={handleAddCard} 
+      />
+      <CardShoppingForm 
+        isOpen={isShoppingModalOpen}
+        onClose={() => setIsShoppingModalOpen(false)}
+        onSave={handleAddShopping}
+      />
+      <PayOffModal 
+        isOpen={payOffModalOpen}
+        onClose={() => setPayOffModalOpen(false)}
+        onConfirm={processPayment}
+        purchaseItem={selectedPurchaseToPay}
+      />
+    </div>
+  );
+}
+
+export default ListCards;

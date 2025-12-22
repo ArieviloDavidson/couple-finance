@@ -1,0 +1,16 @@
+/* DEFINIÇÕES PARA A PÁGINA INTEIRA */
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+body {
+  margin: 0;
+  border: 0;
+  padding: 0;
+  box-sizing: border-box;
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+}
