@@ -40,7 +40,7 @@
 }
 
 .fixed-list {
-  max-height: 200px;
+  max-height: 100%;
   /* Scroll se tiver muitas contas */
   overflow-y: auto;
   display: flex;
