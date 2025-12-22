@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import './Budgets.css';
 
 const CATEGORIES = [
@@ -18,15 +18,15 @@ const Budgets = () => {
 
   // Dados
   const [sources, setSources] = useState({ wallets: [], cards: [] });
-  const [budgetLimits, setBudgetLimits] = useState({}); // { 'Lazer': 500, 'Mercado': 800 }
-  const [spendingData, setSpendingData] = useState([]); // Array final para o gráfico/lista
+  const [budgetLimits, setBudgetLimits] = useState({});
+  const [spendingData, setSpendingData] = useState([]);
 
   // Modal de Edição
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [newLimit, setNewLimit] = useState('');
 
-  // 1. Carrega as Fontes (Wallets e Cards) para o Filtro
+  // 1. Carrega as Fontes
   useEffect(() => {
     const fetchSources = async () => {
       const wSnap = await getDocs(collection(db, "wallets"));
@@ -39,13 +39,12 @@ const Budgets = () => {
     fetchSources();
   }, []);
 
-  // 2. O Grande Carregamento de Dados (Limites + Gastos)
+  // 2. O Grande Carregamento de Dados
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
 
-      // A. Busca Limites definidos para este mês
-      // Estrutura no banco: collection 'budgets', docId = 'YYYY-MM_Categoria'
+      // A. Busca Limites
       const limitsObj = {};
       const budgetsSnap = await getDocs(query(collection(db, "budgets"), where("month", "==", currentMonth)));
       budgetsSnap.forEach(doc => {
@@ -54,7 +53,7 @@ const Budgets = () => {
       });
       setBudgetLimits(limitsObj);
 
-      // B. Busca Gastos Reais (Transações + Cartões)
+      // B. Busca Gastos Reais
       const spendingObj = {};
       CATEGORIES.forEach(cat => spendingObj[cat] = 0);
 
@@ -66,10 +65,6 @@ const Budgets = () => {
         
         transSnap.docs.forEach(doc => {
           const t = doc.data();
-          
-          // --- FILTRO DE DUPLICIDADE ---
-          // Se for pagamento de fatura, ignoramos, pois o gasto real 
-          // já está sendo contabilizado via 'cardsShopping'
           if (t.category === 'Pagamento de Cartão') return; 
 
           const tDate = t.date?.toDate ? t.date.toDate() : new Date(t.date);
@@ -84,30 +79,50 @@ const Budgets = () => {
         });
       }
 
-      // --- B2. Compras (Cartões) ---
-      // Se filtro for 'all' ou um ID de cartão
+      // --- B2. Compras (Cartões) - LÓGICA DE VENCIMENTO APLICADA ---
       const isCardFilter = sources.cards.some(c => c.id === selectedSource);
       if (selectedSource === 'all' || isCardFilter) {
-        const qCards = query(collection(db, "cardsShopping")); // Pega tudo e filtra no JS (seguro para datas complexas)
+        const qCards = query(collection(db, "cardsShopping"));
         const cardsSnap = await getDocs(qCards);
 
         cardsSnap.docs.forEach(doc => {
           const c = doc.data();
-          const cDate = c.date?.toDate ? c.date.toDate() : new Date(c.date);
-          const cMonth = cDate.toISOString().slice(0, 7);
+          const cardConfig = sources.cards.find(card => card.id === c.cardId);
 
-          // Importante: Aqui somamos as PARCELAS que caem neste mês
+          // 1. Pega data original da compra/parcela
+          let targetDate = c.date?.toDate ? c.date.toDate() : new Date(c.date);
+          
+          // 2. Se temos a config do cartão, aplicamos a projeção de vencimento
+          if (cardConfig) {
+            const closingDay = Number(cardConfig.closingDay);
+            const dueDay = Number(cardConfig.dueDay);
+            const purchaseDay = targetDate.getDate();
+
+            // Lógica A: Compra caiu na próxima fatura? (Comprou depois que fechou)
+            if (purchaseDay >= closingDay) {
+                targetDate.setMonth(targetDate.getMonth() + 1);
+            }
+
+            // Lógica B: O vencimento é no mês seguinte ao fechamento?
+            // Ex: Fecha dia 25, Vence dia 10. (10 < 25) -> Paga no mês seguinte
+            if (dueDay < closingDay) {
+                targetDate.setMonth(targetDate.getMonth() + 1);
+            }
+          }
+
+          const cMonth = targetDate.toISOString().slice(0, 7);
+
+          // Agora comparamos com o mês da fatura calculada, não da compra
           if (cMonth === currentMonth) {
              if (selectedSource === 'all' || c.cardId === selectedSource) {
                const cat = c.category || 'Outros';
-               // Usa totalValue (que na lógica de parcelas, já é o valor da parcela individual)
                if (spendingObj[cat] !== undefined) spendingObj[cat] += Number(c.totalValue);
              }
           }
         });
       }
 
-      // C. Monta array final para o Gráfico e Lista
+      // C. Monta array final
       const finalData = CATEGORIES.map(cat => {
         const limit = limitsObj[cat] || 0;
         const spent = spendingObj[cat] || 0;
@@ -143,11 +158,7 @@ const Budgets = () => {
         limit: Number(newLimit)
       });
       
-      // Atualiza estado local rapidamente
       setBudgetLimits(prev => ({ ...prev, [editingCategory]: Number(newLimit) }));
-      // Força refresh do useEffect alterando levemente ou chamando fetch
-      // (Aqui vamos confiar no reload do useEffect na proxima render se precisasse, 
-      // mas vamos atualizar o spendingData manualmente para ser instantaneo)
       setSpendingData(prev => prev.map(item => {
           if (item.name === editingCategory) {
               const val = Number(newLimit);
@@ -170,11 +181,10 @@ const Budgets = () => {
 
   return (
     <div className="budgets-container">
-      {/* HEADER E FILTROS */}
       <div className="budgets-header">
         <div className="header-title">
           <h2>Metas e Orçamentos</h2>
-          <p>Planeje seus limites de gastos mensais</p>
+          <p>Planeje seus limites (Considerando vencimento da fatura)</p>
         </div>
 
         <div className="budgets-filters">
@@ -200,7 +210,6 @@ const Budgets = () => {
         </div>
       </div>
 
-      {/* GRÁFICO GERAL (RECHARTS) */}
       <div className="budgets-chart-section">
         <h3>Panorama Geral</h3>
         <div style={{ width: '100%', height: 300 }}>
@@ -212,21 +221,17 @@ const Budgets = () => {
                 <Tooltip formatter={(value) => `R$ ${value.toFixed(2)}`} />
                 <Legend />
                 <Bar dataKey="spent" name="Gasto Real" fill="#8884d8" radius={[4, 4, 0, 0]} />
-                {/* Linha de referência visual ou barra de fundo para o limite poderia ser usada, 
-                    mas duas barras lado a lado fica mais claro */}
                 <Bar dataKey="limit" name="Meta Definida" fill="#82ca9d" radius={[4, 4, 0, 0]} />
             </BarChart>
             </ResponsiveContainer>
         </div>
       </div>
 
-      {/* LISTA DETALHADA COM BARRAS DE PROGRESSO */}
       <div className="budgets-list">
         {spendingData.map((item) => {
-          // Cores dinâmicas
-          let progressColor = '#2ecc71'; // Verde
-          if (item.percent > 75) progressColor = '#f1c40f'; // Amarelo
-          if (item.percent >= 100) progressColor = '#e74c3c'; // Vermelho
+          let progressColor = '#2ecc71';
+          if (item.percent > 75) progressColor = '#f1c40f';
+          if (item.percent >= 100) progressColor = '#e74c3c';
 
           return (
             <div key={item.name} className="budget-card" onClick={() => openEdit(item.name, item.limit)}>
@@ -263,7 +268,6 @@ const Budgets = () => {
         })}
       </div>
 
-      {/* MODAL DE EDIÇÃO SIMPLES */}
       {isEditModalOpen && (
         <div className="modal-overlay">
           <div className="modal-content" style={{maxWidth: '300px'}}>
