@@ -1,16 +1,33 @@
-# React + Vite
+# Couple Finance 💰
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 🎯 Objetivo
+O **Couple Finance** é uma aplicação web desenvolvida para facilitar a gestão financeira compartilhada de casais. O objetivo principal é oferecer uma visão unificada e transparente das finanças, resolvendo dores comuns como o controle real do limite de cartões de crédito parcelados e o acompanhamento de metas orçamentárias mensais.
 
-Currently, two official plugins are available:
+## ✨ Funcionalidades Principais
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 💳 Gestão Avançada de Cartões de Crédito
+- **Limite Disponível em Tempo Real:** O app calcula quanto do limite sobra baseando-se nas compras em aberto, não apenas no limite total.
+- **Parcelamento Inteligente:** Ao lançar uma compra parcelada (ex: 10x), o sistema projeta automaticamente os lançamentos para os meses futuros.
+- **Visualização de Ciclo:** Considera datas de fechamento e vencimento para alocar a despesa no mês correto da fatura.
 
-## React Compiler
+### 🎯 Metas e Orçamentos (Budgets)
+- Definição de teto de gastos por categoria (ex: Alimentação, Lazer).
+- Gráficos comparativos (Previsto vs. Realizado).
+- **Lógica Anti-Duplicidade:** O sistema sabe diferenciar o que é "Gasto no Cartão" do "Pagamento da Fatura", evitando que a despesa seja contabilizada duas vezes no orçamento.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 📊 Controle Financeiro
+- **Transações:** Registro de receitas e despesas com categorização.
+- **Carteiras:** Gestão de saldo de múltiplas contas bancárias.
+- **Despesas Fixas:** Checklist mensal de contas recorrentes com botão de "Pagamento Rápido" (gera a transação e desconta do saldo automaticamente).
 
-## Expanding the ESLint configuration
+### 🔐 Segurança
+- Autenticação via **Google (Firebase Auth)**.
+- Sistema de **Allowlist**: Apenas e-mails previamente autorizados conseguem acessar o sistema e os dados.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🛠️ Tecnologias Utilizadas
+
+- **Frontend:** React.js (Vite)
+- **Banco de Dados:** Firebase Firestore
+- **Autenticação:** Firebase Auth
+- **Visualização de Dados:** Recharts
+- **Hospedagem:** GitHub Pages
