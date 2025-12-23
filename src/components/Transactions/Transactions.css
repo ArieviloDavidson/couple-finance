@@ -29,7 +29,8 @@
   border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
-  margin-right: auto; /* Empurra os filtros para a direita */
+  margin-right: auto;
+  /* Empurra os filtros para a direita */
   transition: background 0.3s;
 }
 
@@ -43,7 +44,8 @@
   gap: 10px;
 }
 
-.filter-input, .filter-select {
+.filter-input,
+.filter-select {
   padding: 8px 12px;
   border: 1px solid #ddd;
   border-radius: 6px;
@@ -64,30 +66,42 @@
   border-left: 5px solid #bdc3c7;
 }
 
-.text-green { color: #27ae60; }
-.text-red { color: #c0392b; }
+.text-green {
+  color: #27ae60;
+}
+
+.text-red {
+  color: #c0392b;
+}
 
 /* Lista */
 .transactions-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  align-items: center;
+  width: 100%;
+  /* Para evitar que quebre a página inserimos overflow-y neste elemento */
+  max-height: 700px;
+  overflow-y: auto;
 }
 
 .transaction-item {
   display: flex;
   align-items: center;
   background: white;
+  width: 95%;
   padding: 15px;
   border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
   transition: transform 0.2s;
-  position: relative; /* Necessário para o botão de deletar */
+  position: relative;
+  /* Necessário para o botão de deletar */
 }
 
 .transaction-item:hover {
   transform: translateX(3px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* Botão de Deletar (X) */
@@ -98,7 +112,8 @@
   background: transparent;
   border: none;
   font-size: 1.1rem;
-  color: #dcdcdc; /* Bem clarinho para não poluir */
+  color: #dcdcdc;
+  /* Bem clarinho para não poluir */
   cursor: pointer;
   line-height: 1;
   padding: 5px;
@@ -119,8 +134,13 @@
   margin-right: 15px;
 }
 
-.indicator.entrada { background-color: #27ae60; }
-.indicator.saida { background-color: #c0392b; }
+.indicator.entrada {
+  background-color: #27ae60;
+}
+
+.indicator.saida {
+  background-color: #c0392b;
+}
 
 /* Informações */
 .transaction-info {
@@ -142,7 +162,8 @@
   background-color: #f1f1f1;
   padding: 2px 6px;
   border-radius: 4px;
-  align-self: flex-start; /* Para não esticar */
+  align-self: flex-start;
+  /* Para não esticar */
   margin-bottom: 4px;
 }
 
@@ -171,11 +192,17 @@
   font-weight: bold;
   font-size: 1rem;
   white-space: nowrap;
-  margin-right: 15px; /* Espaço para não bater no botão X em mobile */
+  margin-right: 15px;
+  /* Espaço para não bater no botão X em mobile */
 }
 
-.transaction-value.entrada { color: #27ae60; }
-.transaction-value.saida { color: #c0392b; }
+.transaction-value.entrada {
+  color: #27ae60;
+}
+
+.transaction-value.saida {
+  color: #c0392b;
+}
 
 .no-data {
   text-align: center;
