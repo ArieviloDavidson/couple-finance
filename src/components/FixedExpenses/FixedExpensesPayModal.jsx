@@ -144,7 +144,7 @@ const FixedExpensePayModal = ({ isOpen, onClose, expenseItem }) => {
             style={{ width: '100%', padding: '10px' }}
           >
             {paymentMethod === 'wallet' 
-              ? wallets.map(w => <option key={w.id} value={w.id}>{w.name} (R$ {w.currentBalance})</option>)
+              ? wallets.map(w => <option key={w.id} value={w.id}>{w.name} (R$ {w.currentBalance.toFixed(2)})</option>)
               : cards.map(c => <option key={c.id} value={c.id}>{c.name}</option>)
             }
           </select>
