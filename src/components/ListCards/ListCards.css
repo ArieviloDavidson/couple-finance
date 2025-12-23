@@ -214,6 +214,10 @@
   margin-top: 40px;
   border-top: 1px solid #eee;
   padding-top: 20px;
+  /* Isso garante que não vai quebrar a tela e vai ficar com scroll se passar */
+  max-height: 400px;
+  overflow-y: auto;
+
 }
 
 .shopping-history-section h3 {
