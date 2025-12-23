@@ -15,10 +15,15 @@ const FixedExpenses = () => {
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'livingExpenses'), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      // Ordena o array antes de salvar no estado
+      data.sort((a, b) => a.description.localeCompare(b.description));
+
       setExpenses(data);
     });
+    
     return () => unsubscribe();
-  }, []);
+}, []);
 
   const handleAdd = async (e) => {
     e.preventDefault();
