@@ -59,3 +59,22 @@
   gap: 20px;
   align-items: start;
 }
+
+/* ... estilos anteriores ... */
+
+.btn-view-entries {
+  margin-top: 10px;
+  background-color: #27ae60; /* Verde para remeter a entradas */
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.btn-view-entries:hover {
+  background-color: #219150;
+}

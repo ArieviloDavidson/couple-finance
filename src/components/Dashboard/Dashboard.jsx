@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore'; // Imports Firebase
-import { db } from '../../firebase'; // Import DB
+import { collection, onSnapshot } from 'firebase/firestore'; 
+import { db } from '../../firebase'; 
 import FixedExpenses from '../FixedExpenses/FixedExpenses';
 import ChartExpensesCategory from '../Charts/ChartExpensesCategory';
 import ChartCreditLimit from '../Charts/ChartCreditLimit';
+import FixedEntries from '../FixedEntries/FixedEntries'; // <--- Import do Novo Componente
 import './Dashboard.css';
 
 const Dashboard = () => {
   const [totalBalance, setTotalBalance] = useState(0);
+  const [isEntriesModalOpen, setIsEntriesModalOpen] = useState(false); // <--- Estado do Modal
 
   // Busca e soma o saldo das carteiras em tempo real
   useEffect(() => {
@@ -24,14 +26,20 @@ const Dashboard = () => {
   return (
     <div className="dashboard-container">
       
-      {/* Header agora é um container Flex */}
       <div className="dashboard-header">
         <div className="header-text">
           <h1>Visão Geral</h1>
           <p>Bem-vindos ao Couple Finance</p>
+          
+          {/* BOTÃO NOVO */}
+          <button 
+            className="btn-view-entries" 
+            onClick={() => setIsEntriesModalOpen(true)}
+          >
+            Ver Entradas Fixas
+          </button>
         </div>
 
-        {/* Card de Saldo Total (Igual ao da aba Wallets) */}
         <div className="dashboard-balance-card">
           <span>Saldo Total Disponível</span>
           <strong>
@@ -45,6 +53,12 @@ const Dashboard = () => {
         <ChartExpensesCategory />
         <ChartCreditLimit />
       </div>
+
+      {/* RENDERIZAÇÃO DO MODAL */}
+      <FixedEntries 
+        isOpen={isEntriesModalOpen} 
+        onClose={() => setIsEntriesModalOpen(false)} 
+      />
     </div>
   );
 };
