@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
+// IMPORTANTE: Adicione writeBatch e increment aos imports
+import { collection, onSnapshot, addDoc, deleteDoc, doc, writeBatch, increment } from 'firebase/firestore';
 import { db } from '../../firebase';
 import WalletsForm from '../WalletsForm/WalletsForm';
+import TransferModal from '../TransferModal/TransferModal'; // <--- Importe o novo modal
 import './Wallets.css';
 
 const Wallets = () => {
   const [wallets, setWallets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false); // <--- Novo estado
 
   // Busca dados em Tempo Real
   useEffect(() => {
@@ -43,7 +46,54 @@ const Wallets = () => {
     }
   };
 
-  // Helper para formatar o tipo (de 'conta_corrente' para 'Conta Corrente')
+  // --- NOVA FUNÇÃO DE TRANSFERÊNCIA ---
+  const handleTransfer = async (transferData) => {
+    try {
+      const batch = writeBatch(db);
+
+      // 1. Referências das Carteiras
+      const sourceRef = doc(db, 'wallets', transferData.sourceId);
+      const destRef = doc(db, 'wallets', transferData.destId);
+
+      // 2. Atualiza Saldos (Decrementa Origem, Incrementa Destino)
+      batch.update(sourceRef, { currentBalance: increment(-transferData.value) });
+      batch.update(destRef, { currentBalance: increment(transferData.value) });
+
+      // 3. Cria Transação de SAÍDA na Origem
+      const transactionOutRef = doc(collection(db, 'transactions'));
+      batch.set(transactionOutRef, {
+        description: `Transf. para ${transferData.destName}`,
+        value: transferData.value,
+        type: 'saida',
+        category: 'Transferência',
+        date: transferData.date,
+        walletId: transferData.sourceId,
+        walletName: transferData.sourceName
+      });
+
+      // 4. Cria Transação de ENTRADA no Destino
+      const transactionInRef = doc(collection(db, 'transactions'));
+      batch.set(transactionInRef, {
+        description: `Transf. de ${transferData.sourceName}`,
+        value: transferData.value,
+        type: 'entrada',
+        category: 'Transferência',
+        date: transferData.date,
+        walletId: transferData.destId,
+        walletName: transferData.destName
+      });
+
+      // 5. Executa tudo de uma vez
+      await batch.commit();
+      alert("Transferência realizada com sucesso!");
+
+    } catch (error) {
+      console.error("Erro na transferência:", error);
+      alert("Erro ao realizar transferência.");
+    }
+  };
+
+  // Helper para formatar o tipo
   const formatType = (type) => {
     const types = {
       'conta_corrente': 'Conta Corrente',
@@ -54,7 +104,6 @@ const Wallets = () => {
     return types[type] || type;
   };
 
-  // Cálculo do Saldo Total Acumulado
   const totalBalance = wallets.reduce((acc, w) => acc + (w.currentBalance || 0), 0);
 
   if (loading) return <div className="loading">Carregando carteiras...</div>;
@@ -63,9 +112,22 @@ const Wallets = () => {
     <div className="wallets-wrapper">
       <div className="header-actions">
         <h2>Minhas Carteiras</h2>
-        <button className="btn-new-wallet" onClick={() => setIsModalOpen(true)}>
-          + Nova Carteira
-        </button>
+        
+        {/* Container para os botões ficarem alinhados */}
+        <div className="header-buttons" style={{ display: 'flex', gap: '10px' }}>
+            <button className="btn-new-wallet" onClick={() => setIsModalOpen(true)}>
+            + Nova Carteira
+            </button>
+            
+            {/* NOVO BOTÃO */}
+            <button 
+                className="btn-transfer" 
+                onClick={() => setIsTransferModalOpen(true)}
+                style={{ backgroundColor: '#8e44ad', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '5px', cursor: 'pointer' }}
+            >
+            ⇆ Nova Transferência
+            </button>
+        </div>
       </div>
 
       {/* Card de Resumo Total */}
@@ -98,10 +160,18 @@ const Wallets = () => {
         ))}
       </div>
 
+      {/* Modais */}
       <WalletsForm 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onSave={handleAddWallet} 
+      />
+
+      <TransferModal
+        isOpen={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+        onConfirm={handleTransfer}
+        wallets={wallets}
       />
     </div>
   );
