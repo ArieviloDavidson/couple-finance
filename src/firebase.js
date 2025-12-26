@@ -7,12 +7,12 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth"
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBNChJIZrsEvAsrRrSkZOvMr0suzM-uX10",
-  authDomain: "couple-finance-v1.firebaseapp.com",
-  projectId: "couple-finance-v1",
-  storageBucket: "couple-finance-v1.firebasestorage.app",
-  messagingSenderId: "444268151386",
-  appId: "1:444268151386:web:d440d1b86325a8448a4e63"
+  apiKey: import.meta.env.VITE_API_KEY,
+  authDomain: import.meta.env.VITE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_APP_ID
 };
 
 // Initialize Firebase

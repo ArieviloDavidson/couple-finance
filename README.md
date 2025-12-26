@@ -30,4 +30,4 @@ O **Couple Finance** é uma aplicação web desenvolvida para facilitar a gestã
 - **Banco de Dados:** Firebase Firestore
 - **Autenticação:** Firebase Auth
 - **Visualização de Dados:** Recharts
-- **Hospedagem:** GitHub Pages
+- **Hospedagem:** Vercel
