@@ -62,7 +62,7 @@ const ChartCreditLimit = () => {
             <Tooltip formatter={(value) => `R$ ${value.toFixed(2)}`} />
             <Legend />
             {/* Empilhamos as barras: Usado + Disponível = Limite Total */}
-            <Bar dataKey="Usado" stackId="a" fill="#FF8042" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="Usado" stackId="a" fill="#ff4242ff" radius={[0, 0, 0, 0]} />
             <Bar dataKey="Disponível" stackId="a" fill="#00C49F" radius={[0, 5, 5, 0]} />
           </BarChart>
         </ResponsiveContainer>

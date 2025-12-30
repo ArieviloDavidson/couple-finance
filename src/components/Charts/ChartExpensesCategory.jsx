@@ -4,7 +4,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
 import './ChartExpensesCategory.css'; 
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF4560'];
+const COLORS = ['#0088FE', '#00c42aff', '#FFBB28', '#ff5703ff', '#AF19FF', '#f80000ff', '#4e4f63da', '#f13bc4ff'];
 
 const ChartExpensesCategory = () => {
   const [data, setData] = useState([]);
