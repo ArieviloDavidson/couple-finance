@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-// IMPORTANTE: Adicione writeBatch e increment aos imports
 import { collection, onSnapshot, addDoc, deleteDoc, doc, writeBatch, increment } from 'firebase/firestore';
 import { db } from '../../firebase';
 import WalletsForm from '../WalletsForm/WalletsForm';
@@ -16,6 +15,16 @@ const Wallets = () => {
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'wallets'), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      // --- TRECHO NOVO: ORDENAÇÃO ---
+      // Ordena do maior saldo para o menor (Decrescente)
+      data.sort((a, b) => {
+        const saldoA = Number(a.currentBalance) || 0;
+        const saldoB = Number(b.currentBalance) || 0;
+        return saldoB - saldoA;
+      });
+      // -----------------------------
+
       setWallets(data);
       setLoading(false);
     });
