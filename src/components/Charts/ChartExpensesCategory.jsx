@@ -25,9 +25,10 @@ const ChartExpensesCategory = () => {
         const item = doc.data();
         const itemDateObj = item.date?.toDate ? item.date.toDate() : new Date(item.date);
         const itemMonth = itemDateObj.toISOString().slice(0, 7);
+        
+        const cat = item.category || 'Outros';
 
-        if (itemMonth === filterDate) {
-            const cat = item.category || 'Outros';
+        if (itemMonth === filterDate && cat !== 'Transferência') {
             grouped[cat] = (grouped[cat] || 0) + Number(item.value);
         }
       });
