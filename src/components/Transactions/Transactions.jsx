@@ -12,6 +12,13 @@ import { db } from '../../firebase';
 import TransactionForm from '../TransactionForm/TransactionForm';
 import './Transactions.css';
 
+// Categorias Pré-definidas
+const CATEGORIES = [
+  "Alimentação", "Mercado", "Contas", "Lazer", 
+  "Investimentos", "Transporte", "Saúde", 
+  "Pagamento de Cartão", "Outros"
+];
+
 const Transactions = () => {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,6 +26,7 @@ const Transactions = () => {
 
   // Filtros
   const [filterType, setFilterType] = useState('todos');
+  const [filterCategory, setFilterCategory] = useState('todos');
   const [filterDate, setFilterDate] = useState(() => {
     // Inicia com o mês atual (YYYY-MM)
     const today = new Date();
@@ -124,6 +132,9 @@ const Transactions = () => {
       if (itemDate !== filterDate) return false;
     }
 
+    // Filtro de Categoria
+    if (filterCategory !== 'todos' && item.category !== filterCategory) return false;
+
     return true;
   });
 
@@ -159,6 +170,17 @@ const Transactions = () => {
             <option value="todos">Todos</option>
             <option value="entrada">Entradas</option>
             <option value="saida">Saídas</option>
+          </select>
+
+          <select 
+            value={filterCategory} 
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="filter-select"
+          >
+            <option value="todos">Todas as Categorias</option>
+            {CATEGORIES.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
           </select>
         </div>
       </div>
