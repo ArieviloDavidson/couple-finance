@@ -53,3 +53,44 @@
   width: 20px;
   height: 20px;
 }
+
+/* --- RESPONSIVIDADE --- */
+
+/* Tablets e Telas Médias (até 768px) */
+@media (max-width: 768px) {
+  .login-card {
+    /* Reduz um pouco a largura máxima para não parecer muito pequeno em tablets verticais */
+    padding: 30px; 
+    /* Garante que tenha uma margem lateral se a tela for estreita */
+    width: 90%; 
+  }
+}
+
+/* Celulares (até 480px) */
+@media (max-width: 480px) {
+  .login-container {
+    /* Em celulares, muitas vezes o fundo branco total fica mais limpo, 
+       mas se quiser manter o cinza, remova a linha abaixo */
+    background-color: #f0f2f5; 
+  }
+
+  .login-card {
+    padding: 20px; /* Mais espaço para conteúdo, menos borda */
+    width: 70%; /* Margem de 5% de cada lado */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1); /* Sombra mais suave */
+  }
+
+  .login-card h1 {
+    font-size: 18px; /* Reduz título para não quebrar em 2 linhas */
+  }
+
+  .login-card p {
+    font-size: 10px;
+    margin-bottom: 20px;
+  }
+
+  .btn-google {
+    font-size: 14px; /* Texto do botão levemente menor */
+    padding: 10px;
+  }
+}
