@@ -1,34 +1,47 @@
-import React from 'react';
-import { signInWithPopup, signOut } from "firebase/auth"; // Importe signOut
-import { auth, googleProvider } from '../../firebase';
+import React, { useState } from 'react';
+import { signInWithPopup, signOut } from "firebase/auth";
+import { collection, query, where, getDocs } from "firebase/firestore"; // Importações do Firestore
+import { auth, googleProvider, db } from '../../firebase'; // Importe o 'db' aqui
 import './Login.css';
 
-// --- CONFIGURAÇÃO DE SEGURANÇA ---
-const ALLOWED_EMAILS = [
-  "davidsondodc2106@gmail.com",
-  "dudsbarros2002d@gmail.com"
-];
-
 const Login = () => {
-  
+  const [loading, setLoading] = useState(false); // Feedback visual é importante em chamadas async
+
   const handleGoogleLogin = async () => {
+    setLoading(true);
     try {
+      // 1. Autenticação com Google
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
 
-      // VERIFICAÇÃO DE SEGURANÇA
-      if (!ALLOWED_EMAILS.includes(user.email)) {
-        // Se o email não estiver na lista, desloga imediatamente
+      // 2. Referência à coleção de usuários permitidos
+      const usersRef = collection(db, "allowed_users");
+      
+      // 3. Query: Procure onde o campo 'email' é igual ao email do usuário logado
+      const q = query(usersRef, where("email", "==", user.email));
+      const querySnapshot = await getDocs(q);
+
+      // 4. Verificação
+      if (querySnapshot.empty) {
+        // Se a query retornou vazio, o email não está na lista
         await signOut(auth);
         alert("Acesso Negado: Este email não tem permissão para acessar o sistema.");
-        return;
+      } else {
+        // Opcional: Você pode pegar dados extras do banco aqui se quiser
+        // O App.jsx vai detectar o login automaticamente via onAuthStateChanged
+        console.log("Login autorizado para:", user.email);
       }
-
-      // Se passou, o App.jsx vai detectar o login automaticamente
 
     } catch (error) {
       console.error("Erro ao fazer login:", error);
-      alert("Erro ao logar. Tente novamente.");
+      // Se o erro for 'auth/popup-closed-by-user', não precisa alertar
+      if (error.code !== 'auth/popup-closed-by-user') {
+        alert("Erro ao logar. Tente novamente.");
+      }
+      // Em caso de erro, garante o logout por precaução
+      await signOut(auth);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -38,12 +51,22 @@ const Login = () => {
         <h1>Couple Finance 💰</h1>
         <p>Faça login para gerenciar suas finanças</p>
         
-        <button className="btn-google" onClick={handleGoogleLogin}>
-          <img 
-            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
-            alt="Google Logo" 
-          />
-          Entrar com Google
+        <button 
+          className="btn-google" 
+          onClick={handleGoogleLogin} 
+          disabled={loading} // Desabilita botão durante carregamento
+        >
+          {loading ? (
+            <span>Verificando permissões...</span>
+          ) : (
+            <>
+              <img 
+                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
+                alt="Google Logo" 
+              />
+              Entrar com Google
+            </>
+          )}
         </button>
       </div>
     </div>
