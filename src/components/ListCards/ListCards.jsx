@@ -7,6 +7,11 @@ import CardShoppingForm from '../CardShoppingForm/CardShoppingForm';
 import PayOffModal from '../PayOffModal/PayOffModal';
 
 const ListCards = () => {
+
+  // Filtro de mês/ano
+  const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [selectedCardFilter, setSelectedCardFilter] = useState(''); // ID do cartão selecionado
+
   const [cards, setCards] = useState([]);
   const [shoppingList, setShoppingList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,6 +58,17 @@ const ListCards = () => {
       unsubscribeShopping();
     };
   }, []);
+
+  const filteredShoppingList = shoppingList.filter(item => {
+    // Filtro de Mês (YYYY-MM)
+    const itemYearMonth = item.dateObj.toISOString().slice(0, 7);
+    const matchMonth = !currentMonth || itemYearMonth === currentMonth;
+
+    // Filtro de Cartão
+    const matchCard = !selectedCardFilter || item.cardId === selectedCardFilter;
+
+    return matchMonth && matchCard;
+  });
 
   // --- HELPER: Calcular Limite Disponível ---
   const getCardMetrics = (cardId, limitTotal) => {
@@ -202,6 +218,26 @@ const ListCards = () => {
             <button className="btn-shopping" onClick={() => setIsShoppingModalOpen(true)}>
             + Compra Crédito
             </button>
+            {/* NOVO: Filtro de Cartão */}
+            <select 
+              value={selectedCardFilter} 
+              onChange={e => setSelectedCardFilter(e.target.value)}
+              className="filter-input"
+            >
+              <option value="">Todos os Cartões</option>
+              {cards.map(card => (
+                <option key={card.id} value={card.id}>
+                  {card.name}
+                </option>
+              ))}
+            </select>
+            {/* NOVO: Filtro de Mês */}
+            <input 
+              type="month" 
+              value={currentMonth} 
+              onChange={e => setCurrentMonth(e.target.value)}
+              className="filter-input"
+           />
         </div>
       </div>
 
@@ -269,13 +305,13 @@ const ListCards = () => {
 
       {/* LISTA DE COMPRAS */}
       <div className="shopping-history-section">
-        <h3>Histórico de Compras (Crédito)</h3>
+        <h3>Histórico de Compras (Crédito) {currentMonth}</h3>
         
-        {shoppingList.length === 0 ? (
+        {filteredShoppingList.length === 0 ? (
           <p className="no-data">Nenhuma compra registrada nos cartões.</p>
         ) : (
           <div className="shopping-list">
-            {shoppingList.map(item => {
+            {filteredShoppingList.map(item => {
               const isPaid = item.status === 'pago';
 
               return (
