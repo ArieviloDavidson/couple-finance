@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import CurrencyInput from '../CurrencyInput/CurrencyInput';
 import './WalletsForm.css';
 
 const WalletsForm = ({ isOpen, onClose, onSave }) => {
@@ -39,13 +40,13 @@ const WalletsForm = ({ isOpen, onClose, onSave }) => {
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Nome da Carteira</label>
-            <input 
-              type="text" 
-              name="name" 
-              value={formData.name} 
-              onChange={handleChange} 
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
               placeholder="Ex: Conta Nubank, Vale Alimentação..."
-              required 
+              required
             />
           </div>
 
@@ -61,25 +62,22 @@ const WalletsForm = ({ isOpen, onClose, onSave }) => {
 
           <div className="form-group">
             <label>Saldo Atual (R$)</label>
-            <input 
-              type="number" 
-              name="currentBalance" 
-              value={formData.currentBalance} 
-              onChange={handleChange} 
-              placeholder="0.00"
-              step="0.01"
-              required 
+            <CurrencyInput
+              name="currentBalance"
+              value={formData.currentBalance}
+              onChange={handleChange}
+              required
             />
             <small>Quanto tem nessa conta HOJE?</small>
           </div>
 
           <div className="form-group">
             <label>Cor de Identificação</label>
-            <input 
-              type="color" 
-              name="color" 
-              value={formData.color} 
-              onChange={handleChange} 
+            <input
+              type="color"
+              name="color"
+              value={formData.color}
+              onChange={handleChange}
               className="color-input"
             />
           </div>

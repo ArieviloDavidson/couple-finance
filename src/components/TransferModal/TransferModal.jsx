@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { parseDateToNoon } from '../../utils/dateUtils';
+import CurrencyInput from '../CurrencyInput/CurrencyInput';
 import './TransferModal.css';
 
 const TransferModal = ({ isOpen, onClose, onConfirm, wallets }) => {
@@ -93,9 +94,7 @@ const TransferModal = ({ isOpen, onClose, onConfirm, wallets }) => {
 
           <div className="form-group">
             <label>Valor (R$)</label>
-            <input
-              type="number"
-              step="0.01"
+            <CurrencyInput
               value={value}
               onChange={e => setValue(e.target.value)}
               placeholder="0,00"

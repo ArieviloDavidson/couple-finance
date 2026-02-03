@@ -1,5 +1,6 @@
 // src/components/CardForm/CardForm.jsx
 import React, { useState } from 'react';
+import CurrencyInput from '../CurrencyInput/CurrencyInput';
 import './CardForm.css';
 
 // 1. Definimos o estado inicial fora ou dentro para poder reutilizar
@@ -26,10 +27,10 @@ const CardForm = ({ isOpen, onClose, onSave }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     onSave(formData);
-    
+
     // 3. CORREÇÃO: Reseta o formulário para o estado inicial
     setFormData(initialFormData);
-    
+
     onClose();
   };
 
@@ -50,35 +51,35 @@ const CardForm = ({ isOpen, onClose, onSave }) => {
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Nome do Cartão</label>
-            <input 
-              type="text" 
-              name="name" 
-              value={formData.name} 
-              onChange={handleChange} 
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
               placeholder="Ex: Nubank Roxo"
-              required 
+              required
             />
           </div>
 
           <div className="form-row">
             <div className="form-group">
               <label>Cor</label>
-              <input 
-                type="text" 
-                name="color" 
-                value={formData.color} 
-                onChange={handleChange} 
+              <input
+                type="text"
+                name="color"
+                value={formData.color}
+                onChange={handleChange}
                 className="color-input"
                 placeholder='Ex: #000000'
               />
             </div>
             <div className="form-group">
               <label>Bandeira</label>
-              <input 
-                type="text" 
-                name="flag" 
-                value={formData.flag} 
-                onChange={handleChange} 
+              <input
+                type="text"
+                name="flag"
+                value={formData.flag}
+                onChange={handleChange}
                 placeholder="Ex: Mastercard"
               />
             </div>
@@ -86,34 +87,33 @@ const CardForm = ({ isOpen, onClose, onSave }) => {
 
           <div className="form-group">
             <label>Limite (R$)</label>
-            <input 
-              type="number" 
-              name="limit" 
-              value={formData.limit} 
-              onChange={handleChange} 
-              placeholder="5000"
+            <CurrencyInput
+              name="limit"
+              value={formData.limit}
+              onChange={handleChange}
+              placeholder="5000,00"
             />
           </div>
 
           <div className="form-row">
             <div className="form-group">
               <label>Dia Fechamento</label>
-              <input 
-                type="number" 
-                name="closingDay" 
-                value={formData.closingDay} 
-                onChange={handleChange} 
+              <input
+                type="number"
+                name="closingDay"
+                value={formData.closingDay}
+                onChange={handleChange}
                 min="1" max="31"
                 required
               />
             </div>
             <div className="form-group">
               <label>Dia Vencimento</label>
-              <input 
-                type="number" 
-                name="dueDay" 
-                value={formData.dueDay} 
-                onChange={handleChange} 
+              <input
+                type="number"
+                name="dueDay"
+                value={formData.dueDay}
+                onChange={handleChange}
                 min="1" max="31"
                 required
               />

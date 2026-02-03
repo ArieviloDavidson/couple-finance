@@ -5,6 +5,7 @@ import './CardShoppingForm.css';
 
 import { CATEGORIES, TRANSACTION_TYPES, COLLECTIONS } from '../../utils/constants';
 import { parseDateToNoon } from '../../utils/dateUtils';
+import CurrencyInput from '../CurrencyInput/CurrencyInput';
 
 const CardShoppingForm = ({ isOpen, onClose, onSave }) => {
   const [cards, setCards] = useState([]);
@@ -77,7 +78,12 @@ const CardShoppingForm = ({ isOpen, onClose, onSave }) => {
           <div className="form-row">
             <div className="form-group">
               <label>Valor Total (R$)</label>
-              <input type="number" name="totalValue" value={formData.totalValue} onChange={handleChange} step="0.01" required />
+              <CurrencyInput
+                name="totalValue"
+                value={formData.totalValue}
+                onChange={handleChange}
+                required
+              />
             </div>
             <div className="form-group">
               <label>Parcelas</label>

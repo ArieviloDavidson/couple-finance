@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, getDocs, writeBatch, doc, increment } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { COLLECTIONS } from '../../utils/constants';
+import CurrencyInput from '../CurrencyInput/CurrencyInput';
 import './FixedEntries.css';
 
 const FixedEntryReceiveModal = ({ isOpen, onClose, entryItem }) => {
@@ -77,8 +78,7 @@ const FixedEntryReceiveModal = ({ isOpen, onClose, entryItem }) => {
 
         <div className="form-group">
           <label>Valor Recebido (R$)</label>
-          <input
-            type="number"
+          <CurrencyInput
             value={currentValue}
             onChange={e => setCurrentValue(e.target.value)}
           />

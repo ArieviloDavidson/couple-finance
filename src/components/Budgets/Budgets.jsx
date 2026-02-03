@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import CurrencyInput from '../CurrencyInput/CurrencyInput';
 import './Budgets.css';
 
 import { CATEGORIES, TRANSACTION_TYPES, COLLECTIONS } from '../../utils/constants';
@@ -271,13 +272,11 @@ const Budgets = () => {
             <h3>Meta: {editingCategory}</h3>
             <p style={{ fontSize: '0.9rem', color: '#666' }}>Defina o teto de gastos para {currentMonth}</p>
 
-            <input
-              type="number"
+            <CurrencyInput
               value={newLimit}
               onChange={e => setNewLimit(e.target.value)}
               placeholder="R$ 0,00"
-              autoFocus
-              style={{ width: '100%', padding: '10px', fontSize: '1.2rem', margin: '15px 0', border: '1px solid #ddd', borderRadius: '6px' }}
+              className="budget-input" // Adicionei classe para facilitar se quiser customizar mais
             />
 
             <div className="modal-actions">

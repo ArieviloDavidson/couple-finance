@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { COLLECTIONS } from '../../utils/constants';
+import CurrencyInput from '../CurrencyInput/CurrencyInput';
 import './FixedExpenses.css';
 import FixedExpensePayModal from './FixedExpensesPayModal'; // Importe o Modal
 
@@ -103,11 +104,10 @@ const FixedExpenses = () => {
           value={newItem.description}
           onChange={e => setNewItem({ ...newItem, description: e.target.value })}
         />
-        <input
-          type="number"
-          placeholder="R$"
+        <CurrencyInput
           value={newItem.value}
           onChange={e => setNewItem({ ...newItem, value: e.target.value })}
+          placeholder="R$"
         />
         <button type="submit">+</button>
       </form>

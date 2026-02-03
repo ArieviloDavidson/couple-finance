@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { parseDateToNoon } from '../../utils/dateUtils';
+import { CATEGORIES, TRANSACTION_TYPES, COLLECTIONS } from '../../utils/constants';
+import CurrencyInput from '../CurrencyInput/CurrencyInput';
 import './TransactionForm.css';
 
 // Constantes importadas
@@ -95,10 +97,11 @@ const TransactionForm = ({ isOpen, onClose, onSave }) => {
           <div className="form-row">
             <div className="form-group">
               <label>Valor (R$)</label>
-              <input
-                type="number" name="value"
-                value={formData.value} onChange={handleChange}
-                step="0.01" required
+              <CurrencyInput
+                name="value"
+                value={formData.value}
+                onChange={handleChange}
+                required
               />
             </div>
             <div className="form-group">

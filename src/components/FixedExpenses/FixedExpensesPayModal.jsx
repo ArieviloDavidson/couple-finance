@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, getDocs, writeBatch, doc, increment, addDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { COLLECTIONS } from '../../utils/constants';
+import CurrencyInput from '../CurrencyInput/CurrencyInput';
 import './FixedExpenses.css'; // Reaproveita o CSS
 
 const FixedExpensePayModal = ({ isOpen, onClose, expenseItem }) => {
@@ -109,8 +110,7 @@ const FixedExpensePayModal = ({ isOpen, onClose, expenseItem }) => {
 
         <div className="form-group">
           <label>Valor (R$)</label>
-          <input
-            type="number"
+          <CurrencyInput
             value={currentValue}
             onChange={e => setCurrentValue(e.target.value)}
           />
