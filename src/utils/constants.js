@@ -22,6 +22,7 @@ export const CATEGORIES = {
         'Eletrônicos',         // Gadgets, Celulares (Veio do CardShoppingForm)
         'Pagamento de Cartão', // Para categorizar pagamentos de fatura
         'Outros',
+        'Assinaturas'
     ]
 };
 
