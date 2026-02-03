@@ -6,9 +6,6 @@ import { CATEGORIES, TRANSACTION_TYPES, COLLECTIONS } from '../../utils/constant
 import CurrencyInput from '../CurrencyInput/CurrencyInput';
 import './TransactionForm.css';
 
-// Constantes importadas
-import { CATEGORIES, TRANSACTION_TYPES, COLLECTIONS } from '../../utils/constants';
-
 const TransactionForm = ({ isOpen, onClose, onSave }) => {
   const [wallets, setWallets] = useState([]);
 
