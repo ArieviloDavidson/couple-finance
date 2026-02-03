@@ -2,7 +2,10 @@
   padding: 20px;
   box-sizing: border-box;
   width: 100%;
+  max-width: 100%;
   margin: 0 auto;
+  overflow-x: hidden;
+  /* Prevents horizontal scroll */
 }
 
 .budgets-header {
@@ -14,8 +17,16 @@
   margin-bottom: 30px;
 }
 
-.header-title h2 { margin: 0; color: #2c3e50; }
-.header-title p { margin: 0; color: #7f8c8d; font-size: 0.9rem; }
+.header-title h2 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.header-title p {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
 
 .budgets-filters {
   display: flex;
@@ -27,10 +38,17 @@
   background: white;
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   margin-bottom: 30px;
+  min-width: 0;
+  /* Prevents flex item overflow with charts */
+  overflow: hidden;
 }
-.budgets-chart-section h3 { margin-top: 0; color: #2c3e50; }
+
+.budgets-chart-section h3 {
+  margin-top: 0;
+  color: #2c3e50;
+}
 
 /* Grid de Cards de Metas */
 .budgets-list {
@@ -41,9 +59,9 @@
 
 .budget-card {
   background: white;
-  padding: 20px;
+  padding: 15px;
   border-radius: 12px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   border: 1px solid transparent;
@@ -51,7 +69,7 @@
 
 .budget-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
   border-color: #3498db;
 }
 
@@ -62,9 +80,19 @@
   margin-bottom: 10px;
 }
 
-.cat-name { font-weight: bold; color: #333; }
-.cat-values strong { color: #2c3e50; font-size: 1.1rem; }
-.cat-values small { color: #95a5a6; }
+.cat-name {
+  font-weight: bold;
+  color: #333;
+}
+
+.cat-values strong {
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.cat-values small {
+  color: #95a5a6;
+}
 
 /* Barra de Progresso Customizada */
 .progress-bg {
