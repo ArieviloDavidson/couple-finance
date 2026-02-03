@@ -22,6 +22,7 @@ const Transactions = () => {
   // Filtros
   const [filterType, setFilterType] = useState('todos');
   const [filterCategory, setFilterCategory] = useState('todos');
+  const [searchTerm, setSearchTerm] = useState(''); // Novo estado de busca
   const [filterDate, setFilterDate] = useState(() => {
     // Inicia com o mês atual (YYYY-MM)
     const today = new Date();
@@ -130,6 +131,11 @@ const Transactions = () => {
     // Filtro de Categoria
     if (filterCategory !== 'todos' && item.category !== filterCategory) return false;
 
+    // Filtro de Busca por Texto (Descrição)
+    if (searchTerm && !item.description.toLowerCase().includes(searchTerm.toLowerCase())) {
+      return false;
+    }
+
     return true;
   });
 
@@ -150,6 +156,14 @@ const Transactions = () => {
         </button>
 
         <div className="filters">
+          <input
+            type="text"
+            placeholder="Buscar..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="filter-input"
+            style={{ minWidth: '150px' }} // Ajuste visual básico
+          />
           <input
             type="month"
             value={filterDate}
