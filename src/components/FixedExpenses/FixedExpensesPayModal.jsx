@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { collection, getDocs, writeBatch, doc, increment, addDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { COLLECTIONS } from '../../utils/constants';
 import './FixedExpenses.css'; // Reaproveita o CSS
 
 const FixedExpensePayModal = ({ isOpen, onClose, expenseItem }) => {
   const [paymentMethod, setPaymentMethod] = useState('wallet'); // 'wallet' ou 'card'
   const [selectedSourceId, setSelectedSourceId] = useState('');
-  
+
   const [wallets, setWallets] = useState([]);
   const [cards, setCards] = useState([]);
-  
+
   // Permite editar o valor na hora de pagar (ex: conta de luz varia)
   const [currentValue, setCurrentValue] = useState('');
 
@@ -17,12 +18,12 @@ const FixedExpensePayModal = ({ isOpen, onClose, expenseItem }) => {
   useEffect(() => {
     if (isOpen && expenseItem) {
       setCurrentValue(expenseItem.value); // Preenche com o valor padrão
-      
+
       const fetchData = async () => {
-        const wSnap = await getDocs(collection(db, "wallets"));
+        const wSnap = await getDocs(collection(db, COLLECTIONS.WALLETS));
         setWallets(wSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-        
-        const cSnap = await getDocs(collection(db, "cards"));
+
+        const cSnap = await getDocs(collection(db, COLLECTIONS.CARDS));
         setCards(cSnap.docs.map(d => ({ id: d.id, ...d.data() })));
       };
       fetchData();
@@ -45,11 +46,11 @@ const FixedExpensePayModal = ({ isOpen, onClose, expenseItem }) => {
       if (paymentMethod === 'wallet') {
         // --- CENÁRIO 1: PAGAMENTO VIA CARTEIRA ---
         const batch = writeBatch(db);
-        
+
         // A. Cria transação de Saída
-        const transRef = doc(collection(db, "transactions"));
+        const transRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
         const walletName = wallets.find(w => w.id === selectedSourceId)?.name || 'Carteira';
-        
+
         batch.set(transRef, {
           description: expenseItem.description,
           value: val,
@@ -61,7 +62,7 @@ const FixedExpensePayModal = ({ isOpen, onClose, expenseItem }) => {
         });
 
         // B. Desconta da Carteira
-        const walletRef = doc(db, "wallets", selectedSourceId);
+        const walletRef = doc(db, COLLECTIONS.WALLETS, selectedSourceId);
         batch.update(walletRef, { currentBalance: increment(-val) });
 
         await batch.commit();
@@ -70,7 +71,7 @@ const FixedExpensePayModal = ({ isOpen, onClose, expenseItem }) => {
       } else {
         // --- CENÁRIO 2: PAGAMENTO VIA CARTÃO DE CRÉDITO ---
         // Cria registro em cardsShopping (Assumindo 1x sem juros)
-        await addDoc(collection(db, "cardsShopping"), {
+        await addDoc(collection(db, COLLECTIONS.CARDS_SHOPPING), {
           description: expenseItem.description,
           totalValue: val,
           installments: 1,
@@ -108,10 +109,10 @@ const FixedExpensePayModal = ({ isOpen, onClose, expenseItem }) => {
 
         <div className="form-group">
           <label>Valor (R$)</label>
-          <input 
-            type="number" 
-            value={currentValue} 
-            onChange={e => setCurrentValue(e.target.value)} 
+          <input
+            type="number"
+            value={currentValue}
+            onChange={e => setCurrentValue(e.target.value)}
           />
           <small>Você pode ajustar o valor se veio diferente.</small>
         </div>
@@ -119,14 +120,14 @@ const FixedExpensePayModal = ({ isOpen, onClose, expenseItem }) => {
         <div className="form-group">
           <label>Método de Pagamento</label>
           <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-            <button 
+            <button
               type="button"
               className={`toggle-btn ${paymentMethod === 'wallet' ? 'active' : ''}`}
               onClick={() => setPaymentMethod('wallet')}
             >
               Carteira / Débito
             </button>
-            <button 
+            <button
               type="button"
               className={`toggle-btn ${paymentMethod === 'card' ? 'active' : ''}`}
               onClick={() => setPaymentMethod('card')}
@@ -138,12 +139,12 @@ const FixedExpensePayModal = ({ isOpen, onClose, expenseItem }) => {
 
         <div className="form-group">
           <label>Selecione a Origem</label>
-          <select 
-            value={selectedSourceId} 
+          <select
+            value={selectedSourceId}
             onChange={e => setSelectedSourceId(e.target.value)}
             style={{ width: '100%', padding: '10px' }}
           >
-            {paymentMethod === 'wallet' 
+            {paymentMethod === 'wallet'
               ? wallets.map(w => <option key={w.id} value={w.id}>{w.name} (R$ {w.currentBalance.toFixed(2)})</option>)
               : cards.map(c => <option key={c.id} value={c.id}>{c.name}</option>)
             }

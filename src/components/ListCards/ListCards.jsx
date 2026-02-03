@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, addDoc, deleteDoc, doc, writeBatch, increment } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { COLLECTIONS } from '../../utils/constants';
 import './ListCards.css';
 import CardForm from '../CardForm/CardForm';
 import CardShoppingForm from '../CardShoppingForm/CardShoppingForm';
@@ -15,7 +16,7 @@ const ListCards = () => {
   const [cards, setCards] = useState([]);
   const [shoppingList, setShoppingList] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isShoppingModalOpen, setIsShoppingModalOpen] = useState(false);
   const [payOffModalOpen, setPayOffModalOpen] = useState(false);
@@ -24,24 +25,24 @@ const ListCards = () => {
   // 1. Busca Cartões e Compras em paralelo (COM CORREÇÃO DE DATA)
   useEffect(() => {
     // Listener dos Cartões
-    const unsubscribeCards = onSnapshot(collection(db, 'cards'), (snapshot) => {
+    const unsubscribeCards = onSnapshot(collection(db, COLLECTIONS.CARDS), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
       setCards(data);
     });
 
     // Listener das Compras
-    const unsubscribeShopping = onSnapshot(collection(db, 'cardsShopping'), (snapshot) => {
+    const unsubscribeShopping = onSnapshot(collection(db, COLLECTIONS.CARDS_SHOPPING), (snapshot) => {
       const data = snapshot.docs.map(doc => {
         const docData = doc.data();
-        
+
         // --- CORREÇÃO DE DATA ---
         // Se for Timestamp do Firestore, usa .toDate(). Se não, tenta converter string.
-        const dateObj = docData.date?.toDate 
-            ? docData.date.toDate() 
-            : (docData.date ? new Date(docData.date) : new Date());
+        const dateObj = docData.date?.toDate
+          ? docData.date.toDate()
+          : (docData.date ? new Date(docData.date) : new Date());
 
-        return { 
-          ...docData, 
+        return {
+          ...docData,
           id: doc.id,
           dateObj: dateObj
         };
@@ -73,13 +74,13 @@ const ListCards = () => {
   // --- HELPER: Calcular Limite Disponível ---
   const getCardMetrics = (cardId, limitTotal) => {
     // Filtra compras deste cartão que NÃO estão pagas
-    const openPurchases = shoppingList.filter(item => 
+    const openPurchases = shoppingList.filter(item =>
       item.cardId === cardId && item.status !== 'pago'
     );
 
     // Soma o total usado
     const used = openPurchases.reduce((acc, item) => acc + Number(item.totalValue), 0);
-    
+
     // Calcula disponível (não deixa ficar negativo visualmente)
     const available = limitTotal - used;
 
@@ -92,7 +93,7 @@ const ListCards = () => {
 
   const handleAddCard = async (newCardData) => {
     try {
-      await addDoc(collection(db, 'cards'), {
+      await addDoc(collection(db, COLLECTIONS.CARDS), {
         ...newCardData,
         owner: 'Eu',
         createdAt: new Date()
@@ -105,7 +106,7 @@ const ListCards = () => {
   const handleDeleteCard = async (id) => {
     if (window.confirm("Tem certeza que deseja excluir este cartão?")) {
       try {
-        await deleteDoc(doc(db, "cards", id));
+        await deleteDoc(doc(db, COLLECTIONS.CARDS, id));
       } catch (error) {
         console.error("Erro ao excluir:", error);
       }
@@ -118,13 +119,13 @@ const ListCards = () => {
       const batch = writeBatch(db); // Inicia o lote
       const installments = Number(purchaseData.installments);
       const installmentValue = Number(purchaseData.installmentValue);
-      
+
       // Garante que é um objeto Date
-      const baseDate = new Date(purchaseData.date); 
+      const baseDate = new Date(purchaseData.date);
 
       // Loop para criar UMA entrada por parcela
       for (let i = 1; i <= installments; i++) {
-        const newDocRef = doc(collection(db, "cardsShopping"));
+        const newDocRef = doc(collection(db, COLLECTIONS.CARDS_SHOPPING));
 
         // Calcula a data desta parcela (Incrementa os meses)
         const parcelDate = new Date(baseDate);
@@ -134,9 +135,9 @@ const ListCards = () => {
         batch.set(newDocRef, {
           ...purchaseData,
           description: installments > 1 ? `${purchaseData.description} (${i}/${installments})` : purchaseData.description,
-          totalValue: installmentValue, 
-          date: parcelDate, 
-          installmentIndex: i, 
+          totalValue: installmentValue,
+          date: parcelDate,
+          installmentIndex: i,
           originalTotal: purchaseData.totalValue,
           status: 'aberto' // Garante status inicial
         });
@@ -144,7 +145,7 @@ const ListCards = () => {
 
       await batch.commit();
       alert(`${installments} parcela(s) lançada(s) com sucesso!`);
-      
+
     } catch (error) {
       console.error("Erro ao lançar compra parcelada:", error);
       alert("Erro ao salvar compras.");
@@ -154,7 +155,7 @@ const ListCards = () => {
   const handleDeleteShopping = async (id, description) => {
     if (window.confirm(`Excluir a compra "${description}"? Isso liberará o limite do cartão.`)) {
       try {
-        await deleteDoc(doc(db, "cardsShopping", id));
+        await deleteDoc(doc(db, COLLECTIONS.CARDS_SHOPPING, id));
       } catch (error) {
         console.error("Erro ao excluir compra:", error);
       }
@@ -171,21 +172,21 @@ const ListCards = () => {
       const batch = writeBatch(db);
 
       // 1. Atualiza o status da compra no Shopping para 'pago'
-      const purchaseRef = doc(db, "cardsShopping", purchase.id);
+      const purchaseRef = doc(db, COLLECTIONS.CARDS_SHOPPING, purchase.id);
       batch.update(purchaseRef, { status: 'pago' });
 
       // 2. Desconta o valor da Wallet escolhida
-      const walletRef = doc(db, "wallets", walletId);
+      const walletRef = doc(db, COLLECTIONS.WALLETS, walletId);
       batch.update(walletRef, { currentBalance: increment(-purchase.totalValue) });
 
       // 3. Cria o registro histórico na Transactions
-      const newTransactionRef = doc(collection(db, "transactions"));
+      const newTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
       batch.set(newTransactionRef, {
         description: `Pagamento Cartão: ${purchase.description}`,
         value: Number(purchase.totalValue),
         type: 'saida',
-        category: 'Pagamento de Cartão', 
-        date: new Date(), 
+        category: 'Pagamento de Cartão',
+        date: new Date(),
         walletId: walletId,
         walletName: walletName,
         paymentMethod: 'payment_bill'
@@ -212,32 +213,32 @@ const ListCards = () => {
       <div className="header-actions">
         <h2>Meus Cartões</h2>
         <div className="header-buttons">
-            <button className="btn-new-card" onClick={() => setIsModalOpen(true)}>
+          <button className="btn-new-card" onClick={() => setIsModalOpen(true)}>
             + Novo Cartão
-            </button>
-            <button className="btn-shopping" onClick={() => setIsShoppingModalOpen(true)}>
+          </button>
+          <button className="btn-shopping" onClick={() => setIsShoppingModalOpen(true)}>
             + Compra Crédito
-            </button>
-            {/* NOVO: Filtro de Cartão */}
-            <select 
-              value={selectedCardFilter} 
-              onChange={e => setSelectedCardFilter(e.target.value)}
-              className="filter-input"
-            >
-              <option value="">Todos os Cartões</option>
-              {cards.map(card => (
-                <option key={card.id} value={card.id}>
-                  {card.name}
-                </option>
-              ))}
-            </select>
-            {/* NOVO: Filtro de Mês */}
-            <input 
-              type="month" 
-              value={currentMonth} 
-              onChange={e => setCurrentMonth(e.target.value)}
-              className="filter-input"
-           />
+          </button>
+          {/* NOVO: Filtro de Cartão */}
+          <select
+            value={selectedCardFilter}
+            onChange={e => setSelectedCardFilter(e.target.value)}
+            className="filter-input"
+          >
+            <option value="">Todos os Cartões</option>
+            {cards.map(card => (
+              <option key={card.id} value={card.id}>
+                {card.name}
+              </option>
+            ))}
+          </select>
+          {/* NOVO: Filtro de Mês */}
+          <input
+            type="month"
+            value={currentMonth}
+            onChange={e => setCurrentMonth(e.target.value)}
+            className="filter-input"
+          />
         </div>
       </div>
 
@@ -246,7 +247,7 @@ const ListCards = () => {
         {cards.map(card => {
           // Calcula métricas individuais
           const metrics = getCardMetrics(card.id, Number(card.limit));
-          
+
           return (
             <div key={card.id} className="card-item" style={{ borderTop: `4px solid ${card.color || '#ccc'}` }}>
               <button className="btn-delete" onClick={() => handleDeleteCard(card.id)} title="Excluir cartão">&times;</button>
@@ -257,7 +258,7 @@ const ListCards = () => {
                   {card.flag && <span className="card-flag">{card.flag}</span>}
                 </div>
               </div>
-              
+
               {/* Informações de Limite Calculado */}
               <div className="card-limit-info">
                 <div className="limit-row">
@@ -266,11 +267,11 @@ const ListCards = () => {
                     {metrics.available.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </span>
                 </div>
-                
+
                 <div className="limit-progress-bar">
-                  <div 
-                    className="limit-progress-fill" 
-                    style={{ 
+                  <div
+                    className="limit-progress-fill"
+                    style={{
                       width: `${Math.min(metrics.percentageUsed, 100)}%`,
                       backgroundColor: metrics.percentageUsed > 90 ? '#e74c3c' : (card.color || '#2c3e50')
                     }}
@@ -284,7 +285,7 @@ const ListCards = () => {
                   </span>
                 </div>
               </div>
-              
+
               <div className="card-body">
                 <div className="card-dates">
                   <div className="date-group">
@@ -306,7 +307,7 @@ const ListCards = () => {
       {/* LISTA DE COMPRAS */}
       <div className="shopping-history-section">
         <h3>Histórico de Compras (Crédito) {currentMonth}</h3>
-        
+
         {filteredShoppingList.length === 0 ? (
           <p className="no-data">Nenhuma compra registrada nos cartões.</p>
         ) : (
@@ -322,7 +323,7 @@ const ListCards = () => {
                     </span>
                     <strong className="shopping-desc">{item.description}</strong>
                     <span className="shopping-card-badge">{getCardName(item.cardId)}</span>
-                    
+
                     {isPaid && <span className="status-badge-paid">PAGO</span>}
                   </div>
 
@@ -330,9 +331,9 @@ const ListCards = () => {
                     <strong className="shopping-total">
                       {Number(item.totalValue).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </strong>
-                    
+
                     {!isPaid && (
-                      <button 
+                      <button
                         className="btn-pay-shopping"
                         onClick={() => openPayModal(item)}
                         title="Baixar/Pagar Compra"
@@ -341,7 +342,7 @@ const ListCards = () => {
                       </button>
                     )}
 
-                    <button 
+                    <button
                       className="btn-delete-shopping"
                       onClick={() => handleDeleteShopping(item.id, item.description)}
                     >
@@ -356,17 +357,17 @@ const ListCards = () => {
       </div>
 
       {/* MODALS */}
-      <CardForm 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onSave={handleAddCard} 
+      <CardForm
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleAddCard}
       />
-      <CardShoppingForm 
+      <CardShoppingForm
         isOpen={isShoppingModalOpen}
         onClose={() => setIsShoppingModalOpen(false)}
         onSave={handleAddShopping}
       />
-      <PayOffModal 
+      <PayOffModal
         isOpen={payOffModalOpen}
         onClose={() => setPayOffModalOpen(false)}
         onConfirm={processPayment}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { COLLECTIONS } from '../../utils/constants';
 import './ChartCreditLimit.css'; // Importando o CSS separado
 
 const ChartCreditLimit = () => {
@@ -10,9 +11,9 @@ const ChartCreditLimit = () => {
   useEffect(() => {
     const fetchData = async () => {
       // 1. Pega os Cartões
-      const cardsSnap = await getDocs(collection(db, "cards"));
+      const cardsSnap = await getDocs(collection(db, COLLECTIONS.CARDS));
       const cardsMap = {};
-      
+
       cardsSnap.docs.forEach(doc => {
         const d = doc.data();
         cardsMap[doc.id] = {
@@ -23,13 +24,13 @@ const ChartCreditLimit = () => {
       });
 
       // 2. Pega as Compras no Crédito
-      const shoppingSnap = await getDocs(collection(db, "cardsShopping"));
+      const shoppingSnap = await getDocs(collection(db, COLLECTIONS.CARDS_SHOPPING));
       shoppingSnap.docs.forEach(doc => {
         const purchase = doc.data();
-        
+
         // Só soma se o status for 'aberto' (ou se não tiver status ainda)
         const isOpen = !purchase.status || purchase.status === 'aberto';
-        
+
         if (cardsMap[purchase.cardId] && isOpen) {
           cardsMap[purchase.cardId].used += Number(purchase.totalValue);
         }
@@ -52,7 +53,7 @@ const ChartCreditLimit = () => {
   return (
     <div className="chart-container">
       <h3 className="chart-title">Uso do Limite de Crédito</h3>
-      
+
       <div className="chart-content">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart layout="vertical" data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>

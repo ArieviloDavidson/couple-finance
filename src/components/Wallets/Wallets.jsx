@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, addDoc, deleteDoc, doc, writeBatch, increment } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { COLLECTIONS } from '../../utils/constants';
 import WalletsForm from '../WalletsForm/WalletsForm';
 import TransferModal from '../TransferModal/TransferModal'; // <--- Importe o novo modal
 import './Wallets.css';
@@ -13,9 +14,9 @@ const Wallets = () => {
 
   // Busca dados em Tempo Real
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'wallets'), (snapshot) => {
+    const unsubscribe = onSnapshot(collection(db, COLLECTIONS.WALLETS), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
+
       // --- TRECHO NOVO: ORDENAÇÃO ---
       // Ordena do maior saldo para o menor (Decrescente)
       data.sort((a, b) => {
@@ -34,7 +35,7 @@ const Wallets = () => {
   // Adicionar Carteira
   const handleAddWallet = async (newWallet) => {
     try {
-      await addDoc(collection(db, 'wallets'), {
+      await addDoc(collection(db, COLLECTIONS.WALLETS), {
         ...newWallet,
         createdAt: new Date()
       });
@@ -48,7 +49,7 @@ const Wallets = () => {
   const handleDeleteWallet = async (id) => {
     if (window.confirm("Tem certeza? Isso não apaga o histórico de transações, mas remove a carteira.")) {
       try {
-        await deleteDoc(doc(db, 'wallets', id));
+        await deleteDoc(doc(db, COLLECTIONS.WALLETS, id));
       } catch (error) {
         console.error("Erro ao deletar:", error);
       }
@@ -61,15 +62,15 @@ const Wallets = () => {
       const batch = writeBatch(db);
 
       // 1. Referências das Carteiras
-      const sourceRef = doc(db, 'wallets', transferData.sourceId);
-      const destRef = doc(db, 'wallets', transferData.destId);
+      const sourceRef = doc(db, COLLECTIONS.WALLETS, transferData.sourceId);
+      const destRef = doc(db, COLLECTIONS.WALLETS, transferData.destId);
 
       // 2. Atualiza Saldos (Decrementa Origem, Incrementa Destino)
       batch.update(sourceRef, { currentBalance: increment(-transferData.value) });
       batch.update(destRef, { currentBalance: increment(transferData.value) });
 
       // 3. Cria Transação de SAÍDA na Origem
-      const transactionOutRef = doc(collection(db, 'transactions'));
+      const transactionOutRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
       batch.set(transactionOutRef, {
         description: `Transf. para ${transferData.destName}`,
         value: transferData.value,
@@ -81,7 +82,7 @@ const Wallets = () => {
       });
 
       // 4. Cria Transação de ENTRADA no Destino
-      const transactionInRef = doc(collection(db, 'transactions'));
+      const transactionInRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
       batch.set(transactionInRef, {
         description: `Transf. de ${transferData.sourceName}`,
         value: transferData.value,
@@ -121,21 +122,21 @@ const Wallets = () => {
     <div className="wallets-wrapper">
       <div className="header-actions">
         <h2>Minhas Carteiras</h2>
-        
+
         {/* Container para os botões ficarem alinhados */}
         <div className="header-buttons" style={{ display: 'flex', gap: '10px' }}>
-            <button className="btn-new-wallet" onClick={() => setIsModalOpen(true)}>
+          <button className="btn-new-wallet" onClick={() => setIsModalOpen(true)}>
             + Nova Carteira
-            </button>
-            
-            {/* NOVO BOTÃO */}
-            <button 
-                className="btn-transfer" 
-                onClick={() => setIsTransferModalOpen(true)}
-                style={{ backgroundColor: '#8e44ad', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '5px', cursor: 'pointer' }}
-            >
+          </button>
+
+          {/* NOVO BOTÃO */}
+          <button
+            className="btn-transfer"
+            onClick={() => setIsTransferModalOpen(true)}
+            style={{ backgroundColor: '#8e44ad', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '5px', cursor: 'pointer' }}
+          >
             ⇆ Nova Transferência
-            </button>
+          </button>
         </div>
       </div>
 
@@ -147,13 +148,13 @@ const Wallets = () => {
 
       <div className="wallets-grid">
         {wallets.map(wallet => (
-          <div 
-            key={wallet.id} 
+          <div
+            key={wallet.id}
             className="wallet-item"
             style={{ borderLeft: `6px solid ${wallet.color || '#ccc'}` }}
           >
             <button className="btn-delete-wallet" onClick={() => handleDeleteWallet(wallet.id)}>&times;</button>
-            
+
             <div className="wallet-info">
               <h3>{wallet.name}</h3>
               <span className="wallet-type">{formatType(wallet.type)}</span>
@@ -170,10 +171,10 @@ const Wallets = () => {
       </div>
 
       {/* Modais */}
-      <WalletsForm 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onSave={handleAddWallet} 
+      <WalletsForm
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleAddWallet}
       />
 
       <TransferModal

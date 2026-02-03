@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { COLLECTIONS } from '../../utils/constants';
 import './FixedExpenses.css';
 import FixedExpensePayModal from './FixedExpensesPayModal'; // Importe o Modal
 
 const FixedExpenses = () => {
   const [expenses, setExpenses] = useState([]);
   const [newItem, setNewItem] = useState({ description: '', value: '' });
-  
+
   // Estado para controlar o modal de pagamento
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'livingExpenses'), (snapshot) => {
+    const unsubscribe = onSnapshot(collection(db, COLLECTIONS.FIXED_EXPENSES), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
       // Ordena o array antes de salvar no estado
@@ -21,16 +22,16 @@ const FixedExpenses = () => {
 
       setExpenses(data);
     });
-    
+
     return () => unsubscribe();
-}, []);
+  }, []);
 
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!newItem.description || !newItem.value) return;
 
     try {
-      await addDoc(collection(db, 'livingExpenses'), {
+      await addDoc(collection(db, COLLECTIONS.FIXED_EXPENSES), {
         description: newItem.description,
         value: Number(newItem.value)
       });
@@ -42,7 +43,7 @@ const FixedExpenses = () => {
 
   const handleDelete = async (id) => {
     try {
-      await deleteDoc(doc(db, 'livingExpenses', id));
+      await deleteDoc(doc(db, COLLECTIONS.FIXED_EXPENSES, id));
     } catch (error) {
       console.error("Erro ao deletar:", error);
     }
@@ -72,17 +73,17 @@ const FixedExpenses = () => {
         {expenses.map(item => (
           <div key={item.id} className="fixed-item">
             <div className="fixed-info">
-               <span>{item.description}</span>
+              <span>{item.description}</span>
             </div>
-            
+
             <div className="fixed-item-right">
               <strong>
                 {item.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </strong>
-              
+
               {/* BOTÃO GERAR/PAGAR */}
-              <button 
-                className="btn-generate-expense" 
+              <button
+                className="btn-generate-expense"
                 onClick={() => openPayModal(item)}
                 title="Gerar despesa deste mês"
               >
@@ -96,23 +97,23 @@ const FixedExpenses = () => {
       </div>
 
       <form onSubmit={handleAdd} className="fixed-form">
-        <input 
-          type="text" 
-          placeholder="Nova despesa (ex: Internet)" 
+        <input
+          type="text"
+          placeholder="Nova despesa (ex: Internet)"
           value={newItem.description}
-          onChange={e => setNewItem({...newItem, description: e.target.value})}
+          onChange={e => setNewItem({ ...newItem, description: e.target.value })}
         />
-        <input 
-          type="number" 
-          placeholder="R$" 
+        <input
+          type="number"
+          placeholder="R$"
           value={newItem.value}
-          onChange={e => setNewItem({...newItem, value: e.target.value})}
+          onChange={e => setNewItem({ ...newItem, value: e.target.value })}
         />
         <button type="submit">+</button>
       </form>
 
       {/* RENDERIZA O MODAL */}
-      <FixedExpensePayModal 
+      <FixedExpensePayModal
         isOpen={payModalOpen}
         onClose={() => setPayModalOpen(false)}
         expenseItem={selectedExpense}

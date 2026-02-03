@@ -3,7 +3,8 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
 import './CardShoppingForm.css';
 
-const CATEGORIES = ['Alimentação', 'Mercado', 'Contas', 'Lazer', 'Eletrônicos', 'Saúde', 'Outros'];
+import { CATEGORIES, TRANSACTION_TYPES, COLLECTIONS } from '../../utils/constants';
+import { parseDateToNoon } from '../../utils/dateUtils';
 
 const CardShoppingForm = ({ isOpen, onClose, onSave }) => {
   const [cards, setCards] = useState([]);
@@ -20,7 +21,7 @@ const CardShoppingForm = ({ isOpen, onClose, onSave }) => {
   useEffect(() => {
     const fetchCards = async () => {
       if (isOpen) {
-        const snap = await getDocs(collection(db, "cards"));
+        const snap = await getDocs(collection(db, COLLECTIONS.CARDS));
         setCards(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       }
     };
@@ -38,31 +39,24 @@ const CardShoppingForm = ({ isOpen, onClose, onSave }) => {
     e.preventDefault();
     const total = Number(formData.totalValue);
     const parcels = Number(formData.installments);
-    
-    // --- CORREÇÃO DE DATA AQUI (Igual ao TransactionForm) ---
-    // 1. Quebra a string "YYYY-MM-DD"
-    const [year, month, day] = formData.date.split('-');
-
-    // 2. Cria a data manualmente ao meio-dia para evitar problemas de fuso (UTC-3)
-    const dateFixed = new Date(Number(year), Number(month) - 1, Number(day), 12, 0, 0);
 
     onSave({
       ...formData,
       totalValue: total,
       installments: parcels,
       installmentValue: total / parcels,
-      date: dateFixed, // <--- Salva a data corrigida (Objeto Date)
+      date: parseDateToNoon(formData.date),
       status: 'aberto'
     });
-    
+
     onClose();
-    
+
     setFormData({
-      description: '', 
-      totalValue: '', 
-      installments: 1, 
-      date: new Date().toISOString().split('T')[0], 
-      cardId: '', 
+      description: '',
+      totalValue: '',
+      installments: 1,
+      date: new Date().toISOString().split('T')[0],
+      cardId: '',
       category: ''
     });
   };
@@ -92,7 +86,7 @@ const CardShoppingForm = ({ isOpen, onClose, onSave }) => {
           </div>
 
           <div className="form-row">
-             <div className="form-group">
+            <div className="form-group">
               <label>Cartão</label>
               <select name="cardId" value={formData.cardId} onChange={handleChange} required>
                 <option value="" disabled>Selecione...</option>
@@ -103,12 +97,12 @@ const CardShoppingForm = ({ isOpen, onClose, onSave }) => {
               <label>Categoria</label>
               <select name="category" value={formData.category} onChange={handleChange} required>
                 <option value="" disabled>Selecione...</option>
-                {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                {CATEGORIES[TRANSACTION_TYPES.SAIDA].map(cat => <option key={cat} value={cat}>{cat}</option>)}
               </select>
             </div>
           </div>
 
-           <div className="form-group">
+          <div className="form-group">
             <label>Data da Compra</label>
             <input type="date" name="date" value={formData.date} onChange={handleChange} required />
           </div>

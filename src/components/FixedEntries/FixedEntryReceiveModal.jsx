@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, getDocs, writeBatch, doc, increment } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { COLLECTIONS } from '../../utils/constants';
 import './FixedEntries.css';
 
 const FixedEntryReceiveModal = ({ isOpen, onClose, entryItem }) => {
@@ -11,13 +12,13 @@ const FixedEntryReceiveModal = ({ isOpen, onClose, entryItem }) => {
   // Carrega Wallets quando abre
   useEffect(() => {
     if (isOpen && entryItem) {
-      setCurrentValue(entryItem.value); 
-      
+      setCurrentValue(entryItem.value);
+
       const fetchData = async () => {
-        const wSnap = await getDocs(collection(db, "wallets"));
+        const wSnap = await getDocs(collection(db, COLLECTIONS.WALLETS));
         const walletList = wSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         setWallets(walletList);
-        
+
         // Seleciona a primeira carteira por padrão
         if (walletList.length > 0) setSelectedWalletId(walletList[0].id);
       };
@@ -31,11 +32,11 @@ const FixedEntryReceiveModal = ({ isOpen, onClose, entryItem }) => {
     try {
       const val = Number(currentValue);
       const batch = writeBatch(db);
-      
+
       // 1. Cria transação de Entrada
-      const transRef = doc(collection(db, "transactions"));
+      const transRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
       const walletName = wallets.find(w => w.id === selectedWalletId)?.name || 'Carteira';
-      
+
       batch.set(transRef, {
         description: entryItem.description,
         value: val,
@@ -47,7 +48,7 @@ const FixedEntryReceiveModal = ({ isOpen, onClose, entryItem }) => {
       });
 
       // 2. Incrementa o saldo da Carteira
-      const walletRef = doc(db, "wallets", selectedWalletId);
+      const walletRef = doc(db, COLLECTIONS.WALLETS, selectedWalletId);
       batch.update(walletRef, { currentBalance: increment(val) });
 
       await batch.commit();
@@ -76,17 +77,17 @@ const FixedEntryReceiveModal = ({ isOpen, onClose, entryItem }) => {
 
         <div className="form-group">
           <label>Valor Recebido (R$)</label>
-          <input 
-            type="number" 
-            value={currentValue} 
-            onChange={e => setCurrentValue(e.target.value)} 
+          <input
+            type="number"
+            value={currentValue}
+            onChange={e => setCurrentValue(e.target.value)}
           />
         </div>
 
         <div className="form-group">
           <label>Carteira de Destino</label>
-          <select 
-            value={selectedWalletId} 
+          <select
+            value={selectedWalletId}
             onChange={e => setSelectedWalletId(e.target.value)}
             style={{ width: '100%', padding: '10px' }}
           >

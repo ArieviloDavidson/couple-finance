@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { signInWithPopup, signOut } from "firebase/auth";
 import { collection, query, where, getDocs } from "firebase/firestore"; // Importações do Firestore
 import { auth, googleProvider, db } from '../../firebase'; // Importe o 'db' aqui
+import { COLLECTIONS } from '../../utils/constants';
 import './Login.css';
 
 const Login = () => {
@@ -15,8 +16,8 @@ const Login = () => {
       const user = result.user;
 
       // 2. Referência à coleção de usuários permitidos
-      const usersRef = collection(db, "allowed_users");
-      
+      const usersRef = collection(db, COLLECTIONS.ALLOWED_USERS);
+
       // 3. Query: Procure onde o campo 'email' é igual ao email do usuário logado
       const q = query(usersRef, where("email", "==", user.email));
       const querySnapshot = await getDocs(q);
@@ -50,19 +51,19 @@ const Login = () => {
       <div className="login-card">
         <h1>Couple Finance 💰</h1>
         <p>Faça login para gerenciar suas finanças</p>
-        
-        <button 
-          className="btn-google" 
-          onClick={handleGoogleLogin} 
+
+        <button
+          className="btn-google"
+          onClick={handleGoogleLogin}
           disabled={loading} // Desabilita botão durante carregamento
         >
           {loading ? (
             <span>Verificando permissões...</span>
           ) : (
             <>
-              <img 
-                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
-                alt="Google Logo" 
+              <img
+                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                alt="Google Logo"
               />
               Entrar com Google
             </>
