@@ -7,9 +7,9 @@
 
 .transactions-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
+  flex-direction: column;
+  width: 100%;
+  gap: 10px;
   margin-bottom: 20px;
 }
 
@@ -40,6 +40,8 @@
 /* Filtros */
 .filters {
   display: flex;
+  flex-direction: row;
+  width: 100%;
   gap: 10px;
 }
 
