@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, deleteDoc, doc, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { COLLECTIONS } from '../../utils/constants';
 import CurrencyInput from '../CurrencyInput/CurrencyInput';
@@ -12,6 +12,9 @@ const FixedExpenses = () => {
 
   // Estado para controlar o modal de pagamento
   const [payModalOpen, setPayModalOpen] = useState(false);
+
+  // Estado para rastrear despesas já pagas no mês atual
+  const [paidExpenses, setPaidExpenses] = useState(new Set());
   const [selectedExpense, setSelectedExpense] = useState(null);
 
   useEffect(() => {
@@ -26,6 +29,41 @@ const FixedExpenses = () => {
 
     return () => unsubscribe();
   }, []);
+
+  // Busca transações do mês atual para verificar quais despesas já foram pagas
+  useEffect(() => {
+    const fetchPaidExpenses = async () => {
+      const now = new Date();
+      const currentMonth = now.toISOString().slice(0, 7); // YYYY-MM
+
+      // Padrão do projeto: apenas UM where no Firestore, resto filtra no JS
+      const q = query(
+        collection(db, COLLECTIONS.TRANSACTIONS),
+        where('type', '==', 'saida')
+      );
+
+      const snapshot = await getDocs(q);
+      const paidNames = new Set();
+
+      snapshot.docs.forEach(doc => {
+        const t = doc.data();
+        // Filtra por categoria 'Contas' no JS
+        if (t.category !== 'Contas') return;
+
+        // Filtra pelo mês atual no JS
+        const tDate = t.date?.toDate ? t.date.toDate() : new Date(t.date);
+        const tMonth = tDate.toISOString().slice(0, 7);
+
+        if (tMonth === currentMonth) {
+          paidNames.add(t.description);
+        }
+      });
+
+      setPaidExpenses(paidNames);
+    };
+
+    fetchPaidExpenses();
+  }, [payModalOpen]); // Re-busca quando o modal fecha (após pagar)
 
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -71,30 +109,33 @@ const FixedExpenses = () => {
       </div>
 
       <div className="fixed-list">
-        {expenses.map(item => (
-          <div key={item.id} className="fixed-item">
-            <div className="fixed-info">
-              <span>{item.description}</span>
+        {expenses.map(item => {
+          const isPaid = paidExpenses.has(item.description);
+          return (
+            <div key={item.id} className={`fixed-item ${isPaid ? 'expense-paid' : ''}`}>
+              <div className="fixed-info">
+                <span>{item.description}</span>
+              </div>
+
+              <div className="fixed-item-right">
+                <strong>
+                  {item.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </strong>
+
+                {/* BOTÃO GERAR/PAGAR */}
+                <button
+                  className="btn-generate-expense"
+                  onClick={() => openPayModal(item)}
+                  title="Gerar despesa deste mês"
+                >
+                  ▶
+                </button>
+
+                <button onClick={() => handleDelete(item.id)} className="btn-remove-fixed">&times;</button>
+              </div>
             </div>
-
-            <div className="fixed-item-right">
-              <strong>
-                {item.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-              </strong>
-
-              {/* BOTÃO GERAR/PAGAR */}
-              <button
-                className="btn-generate-expense"
-                onClick={() => openPayModal(item)}
-                title="Gerar despesa deste mês"
-              >
-                ▶
-              </button>
-
-              <button onClick={() => handleDelete(item.id)} className="btn-remove-fixed">&times;</button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <form onSubmit={handleAdd} className="fixed-form">
